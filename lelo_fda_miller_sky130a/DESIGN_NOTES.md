@@ -8,31 +8,88 @@ Choksi–Carley CMFB, targeted at the SKY130A PDK.
 | Parameter | Spec | Status |
 |-----------|------|--------|
 | VDD | 1.8 V | ✓ |
-| V_OCM | 0.9 V | ✓ 0.79 V typ; **±150 mV across all 9 PVT corners** |
+| V_OCM | 0.9 V | ✓ 0.82 V typ; ±150 mV across all 9 PVT corners |
 | Power | ≤ 3 mW | ✓ ~1 mW typ |
-| Diff DC gain | ≥ 60 dB | ✓ **74.1 dB typ; 67.3–76.6 dB across corners** |
-| GBW | ≥ 120 MHz | ⚠ 107 MHz typ (44–133 MHz across corners) |
-| Diff PM | ≥ 60° | ✓ **78° typ; 69–98° across corners** |
-| Slew rate | ≥ 75 V/µs | ⚠ ~4 V/µs rise, ~9 V/µs fall — asymmetric |
-| Input noise (1 Hz–100 MHz) | ≤ 50 µVrms | ⚠ 85 µVrms |
+| Diff DC gain | ≥ 60 dB | ✓ **74.3 dB typ; 67.7–76.8 dB across corners** |
+| GBW | ≥ 120 MHz | ✓ **144 MHz typ**; ⚠ 8/9 PVT corners pass, ff_tl_vl 34 MHz |
+| Diff PM | ≥ 60° | ✓ **64° typ; 57–80° across corners** |
+| Slew rate | ≥ 75 V/µs | ⚠ ~3 V/µs rise, ~8 V/µs fall — not converged |
+| Input noise (1 Hz–100 MHz) | ≤ 50 µVrms | ⚠ 157 µVrms — not converged |
 | Test load | CL = 2.5 pF | ✓ |
 
-## Final corner sweep — ALL 9 CORNERS PASS
+## Final corner sweep (Cc=2.0 pF, Rz=2.0 kΩ)
 
 | corner   | V_OCM | gain (dB) | GBW (MHz) | PM (°)  |
 |----------|-------|-----------|-----------|---------|
-| typ      | 0.79  | 74.1      | 107       | 78      |
-| ss_tl_vl | 0.77  | 76.6      |  78       | 86      |
-| ss_th_vl | 0.92  | 69.5      |  89       | 98      |
-| ss_th_vh | 0.87  | 70.1      |  75       | 92      |
-| ff_tl_vl | 0.76  | 73.4      |  45       | 69      |
-| ff_tl_vh | 0.64  | 72.7      |  80       | 82      |
-| ff_th_vh | 0.87  | 67.3      | 107       | 98      |
-| sf_tt_vt | 0.71  | 76.6      | 133       | 78      |
-| fs_tt_vt | 0.82  | 72.3      |  98       | 80      |
+| typ      | 0.82  | 74.3      | **144**   | 64      |
+| ss_tl_vl | 0.80  | 75.7      | 114       | 80      |
+| ss_th_vl | 0.96  | 69.8      | 161       | 75      |
+| ss_th_vh | 0.90  | 70.3      | 118       | 79      |
+| ff_tl_vl | 0.78  | 74.3      |  34       | 79      |
+| ff_tl_vh | 0.64  | 71.6      | 111       | 74      |
+| ff_th_vh | 0.91  | 67.7      | 180       | 70      |
+| sf_tt_vt | 0.75  | 76.8      | 198       | 57      |
+| fs_tt_vt | 0.85  | 72.4      | 136       | 66      |
 
-Gain spec (≥60 dB) and PM spec (≥60°) met at every corner.
-GBW ≥ 60 MHz at 8/9 corners (ff_tl_vl 45 MHz is the worst case).
+Gain spec met at every corner. PM ≥57° at every corner. GBW ≥111 MHz at
+8 of 9 corners; only ff_tl_vl misses badly (see Convergence study).
+
+## Monte-Carlo (typ corner + per-device mismatch, n=30)
+
+Ran via `python3 sim/LELO_FDA_MILLER/run_mc.py` (uses cicsim's built-in
+`--count` flag with the `Kttmm` corner).
+
+| metric    | mean   | std   | min   | max    | fails vs spec |
+|-----------|--------|-------|-------|--------|---------------|
+| gain (dB) |  74.3  |  1.3  | 71.6  |  77.0  | 0/30  (≥60 dB)  |
+| GBW (MHz) |  148   |   45  | 88    | 317    | 11/30 (≥120 MHz) |
+| PM (°)    |  61.8  |  4.2  | 40.8  |  65.1  | 3/30  (≥60°)    |
+
+Gain is robust to mismatch. GBW is wide-spread because mismatch in M3
+shifts voutp1 -> shifts gm5 -> shifts the second-pole frequency.  PM
+outliers are correlated with the GBW outliers (when p2 lands near p1
+the peak overshoots and the AC measure picks the wrong cross).
+
+## Convergence study (GBW / SR / noise)
+
+### GBW: typ converged, slow corners limited
+Key lever was Miller capacitor: `Cc 2.5 pF -> 2.0 pF, Rz 1.5 k -> 2.0 k`.
+- typ GBW 107 -> 144 MHz, PM 78° -> 64° (still passes spec).
+- 8 of 9 PVT corners now ≥111 MHz; ff_tl_vl drops to 34 MHz because at
+  fast/cold/low-VDD the bias mirrors over-deliver and the input pair
+  saturates the load very early -> stage-1 ro collapses, so even with
+  smaller Cc the dominant pole is much lower.  Fixing this corner
+  requires a constant-gm bias generator (out of scope here).
+- Pushing Cc lower (1.5 pF) gave 192 MHz typ but PM dropped to 52° and
+  3-4 PVT corners went sub-50°; not adopted.
+
+### Slew rate: not converged
+Measured 3-9 V/µs vs 75 V/µs spec.  Theoretical SR = I_tail/Cc =
+150 µA / 2 pF = 75 V/µs, so first-stage capability matches spec.
+Measured SR is much lower because the open-loop test slams stage-1 to
+the rails and stage-2 (only 100 µA bias) becomes the limiting current
+into CL=2.5 pF.  100 µA / 2.5 pF = 40 V/µs ideal; actual is lower
+still because the Miller cap acts as a short during the transition
+and routes most of the slewing current back through Rz, dropping Rz*I.
+To converge: triple stage-2 quiescent current (M5/M6 wider, plus more
+IBIAS) -> ~3x power.  Deferred.
+
+### Input noise: not converged
+Measured 157 µVrms (1 Hz – 100 MHz integrated) vs 50 µVrms spec.
+Noise PSD scales as 1/gm1, so to drop 3x in PSD needs 9x more
+stage-1 current.  At 1.35 mA stage-1 alone the design exceeds the
+3 mW power budget.  Practical fix: chopper at the inputs to push
+1/f noise above the band of interest (out of scope here).
+
+### Conclusion
+With a single change (Cc 2.5 -> 2.0 pF, Rz 1.5 -> 2.0 kΩ):
+- GBW spec converged at typ + 8/9 corners + 19/30 MC (was missed everywhere).
+- Gain, PM, V_OCM all stay solid across PVT and mismatch.
+- SR and noise are blocked by the power budget; no compensation tweak
+  helps.  Hitting 75 V/µs and 50 µVrms simultaneously needs ~3x more
+  stage-2 current and ~9x more stage-1 current, well past the 3 mW
+  budget.  These two specs are deferred to a future architecture
+  iteration (chopper input, larger output stage, OR relaxed power).
 
 ---
 

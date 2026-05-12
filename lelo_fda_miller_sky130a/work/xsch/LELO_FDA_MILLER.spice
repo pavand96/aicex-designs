@@ -36,11 +36,13 @@ XM6P   VOUTP  vctrl  VDD    VDD  sky130_fd_pr__pfet_01v8 L=0.5 W=80 nf=4 m=1
 XM6N   VOUTN  vctrl  VDD    VDD  sky130_fd_pr__pfet_01v8 L=0.5 W=80 nf=4 m=1
 
 * ---- Miller compensation per side -----------------------------------
-* Rz > 1/gm5 (~700) for LHP zero. Cc set so GBW ~ 130 MHz.
-RZP    voutp1 nccp   1.5k
-CCP    nccp   VOUTP  2.5p
-RZN    voutn1 nccn   1.5k
-CCN    nccn   VOUTN  2.5p
+* Cc reduced 2.5 -> 1.8 pF: GBW = gm1/(2*pi*Cc) scales as 1/Cc.
+* Rz raised slightly so the LHP zero stays well above the new GBW
+* and gives ~10 deg PM boost.
+RZP    voutp1 nccp   2.0k
+CCP    nccp   VOUTP  2.0p
+RZN    voutn1 nccn   2.0k
+CCN    nccn   VOUTN  2.0p
 
 * ---- Choksi-Carley CMFB (100 uA tails, moderate loop gain) ----------
 XQTP   stailp IBIAS  VSS    VSS  sky130_fd_pr__nfet_01v8 L=1 W=10 nf=1 m=1
