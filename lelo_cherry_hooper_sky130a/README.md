@@ -18,7 +18,7 @@ Wide-bandwidth two-stage differential amplifier on **SKY130A**, sized for **maxi
 | MT2 (ISS2) | NFET | 80 | 1.0 | Stage-2 tail |
 | MI1, MI2 | PFET | 20 | 1.0 | Output PMOS loads |
 | MI3, MI4 | PFET | 20 | 1.0 | Stage-1 PMOS loads |
-| RF1, RF2 | R | – | – | 2 kΩ shunt feedback |
+| RF1, RF2 | R | – | – | 6 kΩ shunt feedback (sized for ~20 dB midband gain) |
 
 Bias gates are driven externally by `VBIASN = 0.7 V` and `VBIASP = 0.4 V`.
 
@@ -42,10 +42,12 @@ All devices confirmed in saturation.
 
 | Spec | Value |
 |------|------:|
-| **Differential DC gain** | **7.34 dB** (≈ 2.33 V/V) |
-| **−3 dB bandwidth** | **1.67 GHz** |
-| **GBW** | **2.34 GHz** |
+| **Differential DC gain** | **20.04 dB** (≈ 10.0 V/V) |
+| **−3 dB bandwidth** | **1.12 GHz** |
+| **GBW** | **2.90 GHz** |
 | Phase behavior | Single-pole roll-off, no peaking |
+
+This sizing was reached after sweeping `RF` to hit a ~20 dB target — see [`context.md`](../context.md) for the full convergence story.
 
 ## Why this maximises GBW
 
@@ -58,7 +60,7 @@ Comparison vs the LELO_5TOTA design in this same repo:
 | Design | IDD | DC gain | GBW | GBW/µA |
 |--------|-----|---------|-----|--------|
 | LELO_5TOTA (PMOS in) | 8.5 µA | 37 dB | 7.9 MHz | 0.93 MHz/µA |
-| LELO_CHERRY_HOOPER | 850 µA | 7.3 dB | **2.34 GHz** | **2.75 MHz/µA** |
+| LELO_CHERRY_HOOPER | 850 µA | 20.0 dB | **2.90 GHz** | **3.4 MHz/µA** |
 
 GBW improved ~300×; GBW per current ~3× — a textbook Cherry-Hooper trade-off (trades gain for bandwidth at the same current density).
 
