@@ -14,7 +14,9 @@ Choksi–Carley CMFB, targeted at the SKY130A PDK.
 | GBW | maximize | **144.1 MHz typ; 113.6–198.5 MHz across 5 corners** | ✓ |
 | Diff PM | ≥ 60° | **64.0° typ; 57.1–79.8° across 5 corners** | ✓ (sf_tt_vt 57.1° marginal) |
 | Slew rate | maximize | **70 V/µs differential (35 V/µs per output)** @ 100 µA | ✓ |
-| Input noise @ 1 kHz | minimize | **729 nV/√Hz input-referred** | ✓ |
+| Input noise (1 Hz – 100 MHz) | < 50 µVrms | **78.9 µVrms (FAIL)** | ✗ |
+| Input noise @ 1 kHz | minimize | **137 nV/√Hz** | — |
+| Input noise @ 10 MHz | minimize | **6.9 nV/√Hz (thermal floor)** | — |
 | Test load | CL = 2.5 pF | 2.5 pF | ✓ |
 
 ### Measurement Methodology Notes
@@ -22,8 +24,9 @@ Choksi–Carley CMFB, targeted at the SKY130A PDK.
 - **SR**: Open-loop ±300 mV differential step (fully steers diff pair).
   Previous ±75 mV bench gave 3.4 V/µs (wrong — diff pair not fully steered).
   Corrected result: 70 V/µs matches analytical I_tail/Cc = 61 V/µs.
-- **Noise**: Output spectral density / gain. ngspice inoise unreliable
-  for CMFB circuits (DC OP convergence issue).
+- **Noise**: ngspice noise analysis with tran+op preamble (settles CMFB).
+  Spectra are in V/√Hz (ASD); integrated RMS = √(∫ ASD² df), 1 Hz – 100 MHz.
+  ngspice `inoise_spectrum` is correctly input-referred.
 
 ## Final corner sweep (Cc=2.0 pF, Rz=2.0 kΩ, IBIAS=100 µA)
 
@@ -82,18 +85,35 @@ to ensure full current steering. Result: **SR = 70 V/µs differential
 IBIAS sweep needs re-running with corrected bench to verify linearity.
 
 ### Input noise: corrected methodology
-Previous bench divided integrated output noise by hardcoded gain (6800),
-giving 155 µVrms. This was unreliable since gain varies with frequency.
+Previous bench had two bugs: (1) divided integrated output noise by
+hardcoded gain, (2) treated ngspice ASD spectra (V/√Hz) as PSD (V²/Hz).
 
-Corrected approach: use ngspice output noise spectral density and divide
-by frequency-dependent gain from AC analysis. The ngspice built-in
-inoise_spectrum gives wrong results for this circuit because the noise
-analysis DC OP converges to a dead state (CMFB not settled).
+Corrected: ngspice `inoise_spectrum` IS correctly input-referred
+(verified with resistor divider test circuit). The spectra are in V/√Hz
+(ASD, amplitude spectral density). Correct integrated RMS noise =
+√(∫ ASD² df). The `tran 10n 200u uic` + `op` preamble is required to
+settle the CMFB before the noise analysis linearizes.
 
-Typical corner spot noise:
-- 1 Hz:    3.66 µV/√Hz (1/f dominated)
-- 1 kHz:   729 nV/√Hz
-- 100 kHz: 10.0 µV/√Hz (beyond 3dB bandwidth, gain rolling off)
+Typical corner input-referred spot noise:
+- 1 Hz:     2503 nV/√Hz (1/f dominated)
+- 1 kHz:    137 nV/√Hz
+- 10 kHz:   52.5 nV/√Hz
+- 100 kHz:  20.8 nV/√Hz
+- 1 MHz:    9.8 nV/√Hz
+- 10 MHz:   6.9 nV/√Hz (thermal floor)
+
+Integrated input-referred noise (1 Hz – 100 MHz):
+- **TT typ: 78.9 µVrms** (spec < 50 µVrms → **FAIL**)
+- SF typ:   75.6 µVrms
+- FS typ:   82.1 µVrms
+- FF/SS corners unreliable (OP convergence issues at extreme T/V)
+
+The excess noise is dominated by 1/f noise in the NMOS input pair.
+SKY130 NMOS has a relatively high 1/f corner (~100 kHz at these sizes).
+Mitigation options:
+  - Increase input pair W×L (reduces K_F/C_ox contribution)
+  - Switch to PMOS input pair (lower 1/f in SKY130 PMOS)
+  - Add chopping or correlated double sampling (CDS)
 
 ### Conclusion (updated 2026-05-12)
 With Cc = 2.0 pF, Rz = 2.0 kΩ, IBIAS = 100 µA:
@@ -102,7 +122,8 @@ With Cc = 2.0 pF, Rz = 2.0 kΩ, IBIAS = 100 µA:
 - GBW = 144.1 MHz typ; all 5 corners ≥ 113 MHz.
 - **SR = 70 V/µs differential (35 V/µs per output)** — corrected from
   previous 3.4 V/µs (wrong bench). Matches I_tail/Cc analytically.
-- Input-referred noise @ 1 kHz = 729 nV/√Hz (corrected methodology).
+- **Noise: 78.9 µVrms integrated (1 Hz – 100 MHz) vs 50 µVrms spec — FAIL.**
+  Dominated by NMOS 1/f noise. Requires larger input pair or PMOS input.
 - Layout / extracted sim not started.
 
 ---
