@@ -21,10 +21,10 @@ CLN    VOUTN  VSS    {CL_val}
 .nodeset v(ibias)        = 0.85
 .nodeset v(xdut.pbias)   = 0.64
 .nodeset v(xdut.ntail)   = 0.25
-.nodeset v(xdut.voutp1)  = 0.69
-.nodeset v(xdut.voutn1)  = 0.69
-.nodeset v(xdut.vctrl)   = 0.71
-.nodeset v(xdut.vd)      = 0.61
+.nodeset v(xdut.voutp1)  = 0.77
+.nodeset v(xdut.voutn1)  = 0.77
+.nodeset v(xdut.vctrl)  = 0.74
+.nodeset v(xdut.vd)  = 0.59
 .nodeset v(voutp)        = {vcm}
 .nodeset v(voutn)        = {vcm}
 .nodeset v(xdut.stailp)  = 0.20
@@ -32,14 +32,14 @@ CLN    VOUTN  VSS    {CL_val}
 .nodeset v(xdut.nccp)    = {vcm}
 .nodeset v(xdut.nccn)    = {vcm}
 
-.ic v(xdut.vctrl) = 0.71
+.ic v(xdut.vctrl)  = 0.74
 .ic v(xdut.pbias) = 0.64
 .ic v(xdut.ntail) = 0.25
 .ic v(voutp)      = {vcm}
 .ic v(voutn)      = {vcm}
-.ic v(xdut.voutp1)= 0.69
-.ic v(xdut.voutn1)= 0.69
-.ic v(xdut.vd)    = 0.61
+.ic v(xdut.voutp1)  = 0.77
+.ic v(xdut.voutn1)  = 0.77
+.ic v(xdut.vd)  = 0.59
 
 .save all
 

@@ -76,15 +76,16 @@ def main():
             "gain_db":   parse(ac_log, "dc_gain_db"),
             "gbw":       parse(ac_log, "fgbw"),
             "pm":        parse(ac_log, "pm"),
-            "vod_step":  parse(tr_log, "vod_fin_s"),
-            "sr":        parse(tr_log, "sr_pos"),
+            "vod_step":  parse(tr_log, "vod_pos"),
+            "sr":        parse(tr_log, "sr_rise"),
+            "sr_fall":   parse(tr_log, "sr_fall"),
         }
         print("  ", row)
         rows.append(row)
 
     # Write CSV
     fields = ["corner", "vocm", "id_m1", "id_m5p", "id_m6p",
-              "gain_db", "gbw", "pm", "vod_step", "sr"]
+              "gain_db", "gbw", "pm", "vod_step", "sr", "sr_fall"]
     with open("corner_summary.csv", "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=fields)
         w.writeheader()

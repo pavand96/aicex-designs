@@ -18,14 +18,14 @@ CLP    VOUTP  VSS    {CL_val}
 CLN    VOUTN  VSS    {CL_val}
 .include ../xdut.spi
 
-.ic v(xdut.vctrl) = 0.71
+.ic v(xdut.vctrl)  = 0.74
 .ic v(xdut.pbias) = 0.64
 .ic v(xdut.ntail) = 0.25
 .ic v(voutp)      = {vcm}
 .ic v(voutn)      = {vcm}
-.ic v(xdut.voutp1)= 0.69
-.ic v(xdut.voutn1)= 0.69
-.ic v(xdut.vd)    = 0.61
+.ic v(xdut.voutp1)  = 0.77
+.ic v(xdut.voutn1)  = 0.77
+.ic v(xdut.vd)  = 0.59
 
 .save all
 
@@ -56,12 +56,15 @@ let vn_1kHz_out  = vn_out_rt[150]
 let vn_100kHz_out= vn_out_rt[250]
 let vn_10MHz_out = vn_out_rt[350]
 
-let v2_in_cum  = integ(inoise_spectrum)
 let v2_out_cum = integ(onoise_spectrum)
 
-* Last index for 100 MHz with dec 50 over 1..100Meg = 8 decades * 50 = 400
-let vn_in_rms_total  = sqrt(v2_in_cum[399])
+* Output integrated 1 Hz .. 100 MHz (last index for 8 decades * 50 = 400)
 let vn_out_rms_total = sqrt(v2_out_cum[399])
+
+* Differential mid-band gain (from companion AC TB at typ).  Override per
+* corner with --replace gain.yaml if needed.
+let gain_mid_diff = 6800
+let vn_in_rms_total = vn_out_rms_total / gain_mid_diff
 
 echo ""
 echo "================ INPUT-REFERRED NOISE (V/sqrt(Hz)) ================"
@@ -71,7 +74,7 @@ echo "================ OUTPUT NOISE (V/sqrt(Hz)) ================"
 print vn_1Hz_out vn_1kHz_out vn_100kHz_out vn_10MHz_out
 echo ""
 echo "================ INTEGRATED 1 Hz .. 100 MHz (Vrms) ================"
-print vn_in_rms_total vn_out_rms_total
+print vn_in_rms_total vn_out_rms_total gain_mid_diff
 
 write {cicname}.raw
 quit

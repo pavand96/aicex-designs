@@ -20,10 +20,10 @@ CLN    VOUTN  VSS    {CL_val}
 .nodeset v(ibias)        = 0.85
 .nodeset v(xdut.pbias)   = 0.64
 .nodeset v(xdut.ntail)   = 0.25
-.nodeset v(xdut.voutp1)  = 0.69
-.nodeset v(xdut.voutn1)  = 0.69
-.nodeset v(xdut.vctrl)   = 0.71
-.nodeset v(xdut.vd)      = 0.61
+.nodeset v(xdut.voutp1)  = 0.77
+.nodeset v(xdut.voutn1)  = 0.77
+.nodeset v(xdut.vctrl)   = 0.74
+.nodeset v(xdut.vd)      = 0.59
 .nodeset v(voutp)        = {vcm}
 .nodeset v(voutn)        = {vcm}
 .nodeset v(xdut.stailp)  = 0.20
@@ -31,14 +31,14 @@ CLN    VOUTN  VSS    {CL_val}
 .nodeset v(xdut.nccp)    = {vcm}
 .nodeset v(xdut.nccn)    = {vcm}
 
-.ic v(xdut.vctrl) = 0.71
+.ic v(xdut.vctrl) = 0.74
 .ic v(xdut.pbias) = 0.64
 .ic v(xdut.ntail) = 0.25
 .ic v(voutp)      = {vcm}
 .ic v(voutn)      = {vcm}
-.ic v(xdut.voutp1)= 0.69
-.ic v(xdut.voutn1)= 0.69
-.ic v(xdut.vd)    = 0.61
+.ic v(xdut.voutp1)= 0.77
+.ic v(xdut.voutn1)= 0.77
+.ic v(xdut.vd)    = 0.59
 
 .save all
 
@@ -55,12 +55,12 @@ echo "===== Bias points ====="
 print v(voutp) v(voutn) v(xdut.voutp1) v(xdut.voutn1) v(xdut.pbias) v(xdut.vctrl) v(xdut.vd) v(xdut.ntail) v(ibias)
 
 let id_m1     = @m.xdut.xm1.msky130_fd_pr__nfet_01v8[id]
-let id_m5p    = -@m.xdut.xm5p.msky130_fd_pr__pfet_01v8[id]
-let id_m6p    = @m.xdut.xm6p.msky130_fd_pr__nfet_01v8[id]
+let id_m5p    = @m.xdut.xm5p.msky130_fd_pr__nfet_01v8[id]
+let id_m6p    = -@m.xdut.xm6p.msky130_fd_pr__pfet_01v8[id]
 let gm1       = @m.xdut.xm1.msky130_fd_pr__nfet_01v8[gm]
-let gm5p      = @m.xdut.xm5p.msky130_fd_pr__pfet_01v8[gm]
+let gm5p      = @m.xdut.xm5p.msky130_fd_pr__nfet_01v8[gm]
 let gds_o1    = @m.xdut.xm1.msky130_fd_pr__nfet_01v8[gds] + @m.xdut.xm3.msky130_fd_pr__pfet_01v8[gds]
-let gds_o2    = @m.xdut.xm5p.msky130_fd_pr__pfet_01v8[gds] + @m.xdut.xm6p.msky130_fd_pr__nfet_01v8[gds]
+let gds_o2    = @m.xdut.xm5p.msky130_fd_pr__nfet_01v8[gds] + @m.xdut.xm6p.msky130_fd_pr__pfet_01v8[gds]
 let A1        = gm1/gds_o1
 let A2        = gm5p/gds_o2
 let A_tot_db  = 20*log10(A1*A2)
