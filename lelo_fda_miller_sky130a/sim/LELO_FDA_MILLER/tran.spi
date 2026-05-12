@@ -1,4 +1,4 @@
-*TB LELO_FDA_MILLER — Open-loop large-signal slew (no FB resistors)
+*TB LELO_FDA_MILLER — Open-loop large-signal slew rate
 .include ../../../work/xsch/LELO_FDA_MILLER.spice
 .option TNOM=27 GMIN=1e-12 reltol=1e-3 srcsteps=20 itl1=500 itl6=300
 
@@ -12,19 +12,20 @@ VDD    VDD    0      dc {AVDD}
 VVCMREF VCMREF 0     dc {vcm}
 IIBIAS  VSS    IBIAS  dc {ibias_val}
 
-* Open-loop differential pulse: VINP_diff = ±150 mV around vcm
+* Open-loop differential pulse: +/-300 mV per side (600 mV total differential)
+* This ensures the diff pair is fully steered (Vov ~ 89 mV).
 VVINP  VINP   0  PWL(0       {vcm}
 +                    8u      {vcm}
-+                    8.001u  {vcm + 0.075}
-+                    16u     {vcm + 0.075}
-+                    16.001u {vcm - 0.075}
-+                    24u     {vcm - 0.075})
++                    8.001u  {vcm + 0.3}
++                    16u     {vcm + 0.3}
++                    16.001u {vcm - 0.3}
++                    24u     {vcm - 0.3})
 VVINN  VINN   0  PWL(0       {vcm}
 +                    8u      {vcm}
-+                    8.001u  {vcm - 0.075}
-+                    16u     {vcm - 0.075}
-+                    16.001u {vcm + 0.075}
-+                    24u     {vcm + 0.075})
++                    8.001u  {vcm - 0.3}
++                    16u     {vcm - 0.3}
++                    16.001u {vcm + 0.3}
++                    24u     {vcm + 0.3})
 
 CLP   VOUTP   VSS   {CL_val}
 CLN   VOUTN   VSS   {CL_val}
@@ -64,20 +65,20 @@ tran 1n 24u
 let vod  = v(VOUTP) - v(VOUTN)
 let svod = abs(deriv(vod))
 
-* Slew rate: max |dvod/dt| during the +step (8u..9u) and -step (16u..17u)
+* Slew rate: max |dvod/dt| during the +step and -step
 meas tran sr_rise MAX svod FROM=8u  TO=9u
 meas tran sr_fall MAX svod FROM=16u TO=17u
 
-* Settled diff-output amplitude (open loop = output rails at ~ vdd, but
-* trimmed by CMFB which holds VOCM = 0.9 V).
+* Settled diff-output amplitude
 meas tran vod_pos AVG vod FROM=14u TO=15.99u
 meas tran vod_neg AVG vod FROM=22u TO=23.99u
 
-let sr_v_per_us = sr_rise / 1e6
+let sr_rise_us = sr_rise / 1e6
+let sr_fall_us = sr_fall / 1e6
 
 echo ""
 echo "===== OPEN-LOOP LARGE-SIGNAL SLEW ====="
-print vod_pos vod_neg sr_rise sr_fall sr_v_per_us
+print vod_pos vod_neg sr_rise sr_fall sr_rise_us sr_fall_us
 
 write {cicname}.raw
 quit

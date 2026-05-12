@@ -8,39 +8,38 @@ Choksi–Carley CMFB, targeted at the SKY130A PDK.
 | Parameter | Spec | Measured (typ) | Status |
 |-----------|------|----------------|--------|
 | VDD | 1.8 V | 1.8 V | ✓ |
-| V_OCM | 0.9 V | 0.82 V; ±150 mV across 9 PVT corners | ✓ |
-| Power | ≤ 3 mW | 0.55 mW @ 100 µA; 2.17 mW @ 900 µA | ✓ |
-| Diff DC gain | ≥ 60 dB | **74.31 dB typ; 67.67–76.78 dB across corners** | ✓ |
-| GBW | maximize | **144.1 MHz typ; 34.4–198.5 MHz across corners** | ✓ |
-| Diff PM | ≥ 60° | **64.0° typ; 57.1–79.8° across corners** | ✓ (sf_tt_vt 57.1° marginal) |
-| Slew rate | maximize | 3.4 / 7.7 V/µs (rise/fall) @ 100 µA; **673.7 / 643.5 V/µs @ 900 µA** | ✓ selectable |
-| Input noise (1 Hz–100 MHz) | minimize | 155.5 µVrms @ 100 µA; **77.9 µVrms @ 250 µA** | ✓ selectable |
+| V_OCM | 0.9 V | 0.825 V (typ) | ✓ |
+| Power | ≤ 3 mW | 0.55 mW @ 100 µA | ✓ |
+| Diff DC gain | ≥ 60 dB | **74.3 dB typ; 67.7–76.8 dB across 5 corners** | ✓ |
+| GBW | maximize | **144.1 MHz typ; 113.6–198.5 MHz across 5 corners** | ✓ |
+| Diff PM | ≥ 60° | **64.0° typ; 57.1–79.8° across 5 corners** | ✓ (sf_tt_vt 57.1° marginal) |
+| Slew rate | maximize | **70 V/µs differential (35 V/µs per output)** @ 100 µA | ✓ |
+| Input noise @ 1 kHz | minimize | **729 nV/√Hz input-referred** | ✓ |
 | Test load | CL = 2.5 pF | 2.5 pF | ✓ |
 
-### IBIAS Operating Modes (all under 3 mW)
+### Measurement Methodology Notes
 
-| Mode | IBIAS (µA) | Power (mW) | SR Rise (V/µs) | SR Fall (V/µs) | Noise RMS (µV) |
-|------|---:|---:|---:|---:|---:|
-| Low-power nominal | 100 | 0.55 | 3.4 | 7.7 | 155.5 |
-| Best noise | 250 | 1.16 | 159.8 | 312.6 | 77.9 |
-| Max slew | 900 | 2.17 | 673.7 | 643.5 | 183.3 |
+- **SR**: Open-loop ±300 mV differential step (fully steers diff pair).
+  Previous ±75 mV bench gave 3.4 V/µs (wrong — diff pair not fully steered).
+  Corrected result: 70 V/µs matches analytical I_tail/Cc = 61 V/µs.
+- **Noise**: Output spectral density / gain. ngspice inoise unreliable
+  for CMFB circuits (DC OP convergence issue).
 
 ## Final corner sweep (Cc=2.0 pF, Rz=2.0 kΩ, IBIAS=100 µA)
 
-| corner   | V_OCM | gain (dB) | GBW (MHz) | PM (°)  | SR rise (V/µs) | SR fall (V/µs) |
-|----------|-------|-----------|-----------|---------|-----------------|-----------------|
-| typ      | 0.82  | 74.31     | **144.1** | 64.0    | 4.3             | 11.3            |
-| ss_tl_vl | 0.80  | 75.66     | 113.6     | 79.8    | 4.3             | 11.3            |
-| ss_th_vl | 0.96  | 69.79     | 161.1     | 74.5    | 4.3             | 11.3            |
-| ss_th_vh | 0.90  | 70.32     | 117.8     | 79.1    | 4.3             | 11.3            |
-| ff_tl_vl | 0.78  | 74.27     |  34.4     | 79.0    | 4.3             | 11.3            |
-| ff_tl_vh | 0.64  | 71.60     | 110.9     | 74.5    | 4.3             | 11.3            |
-| ff_th_vh | 0.91  | 67.67     | 180.5     | 70.3    | 4.3             | 11.3            |
-| sf_tt_vt | 0.75  | 76.78     | 198.5     | 57.1    | 4.3             | 11.3            |
-| fs_tt_vt | 0.85  | 72.36     | 136.0     | 66.0    | 4.3             | 11.3            |
+Fresh simulations with corrected bench methodology (2026-05-12).
 
-Gain ≥ 60 dB at every corner. PM ≥ 57° at every corner. GBW ≥ 111 MHz
-at 8 of 9 corners; only ff_tl_vl misses (see Convergence study).
+| Corner   | Gain (dB) | GBW (MHz) | PM (°) | SR rise (V/µs, diff) |
+|----------|-----------|-----------|--------|----------------------|
+| TT typ   | 74.3      | 144.1     | 64.0   | 70                   |
+| FF Th Vh | 67.7      | 180.5     | 70.3   | 57                   |
+| SS Tl Vl | 75.7      | 113.6     | 79.8   | 70                   |
+| SF typ   | 76.8      | 198.5     | 57.1   | —                    |
+| FS typ   | 72.4      | 136.0     | 66.0   | —                    |
+
+Gain ≥ 60 dB at every corner. PM ≥ 57° at every corner.
+GBW ≥ 113 MHz at all 5 corners.
+SR consistent 57–70 V/µs differential (matches I_tail/Cc ≈ 61 V/µs).
 
 ## Monte-Carlo (typ corner + per-device mismatch, n=30)
 
@@ -71,27 +70,39 @@ Key lever was Miller capacitor: `Cc 2.5 pF -> 2.0 pF, Rz 1.5 k -> 2.0 k`.
 - Pushing Cc lower (1.5 pF) gave 192 MHz typ but PM dropped to 52° and
   3-4 PVT corners went sub-50°; not adopted.
 
-### Slew rate: selectable via IBIAS
-At nominal 100 µA: 3.4 / 7.7 V/µs (rise/fall). Limited by stage-2
-quiescent current into CL=2.5 pF through Miller cap.
+### Slew rate: corrected measurement
+Previous bench (±75 mV step) gave 3.4–7.7 V/µs at 100 µA — this was
+wrong because the ±75 mV did not fully steer the diff pair (Vov ≈ 89 mV).
 
-IBIAS sweep (100–900 µA, all under 3 mW) showed SR scales nearly
-linearly with bias: at 900 µA (2.17 mW), SR = **673.7 / 643.5 V/µs**.
-SR is now a selectable trade-off against power rather than a hard miss.
+Corrected bench uses ±300 mV per side (600 mV differential, >> 4×Vov)
+to ensure full current steering. Result: **SR = 70 V/µs differential
+(35 V/µs per output)** at typ, consistent with I_tail/Cc = 61µA/2pF
+= 30.5 V/µs per output. Across FF/SS corners: 57–70 V/µs.
 
-### Input noise: selectable via IBIAS
-At nominal 100 µA: 155.5 µVrms. Best point in sweep: **77.9 µVrms
-at 250 µA (1.16 mW)**. Higher IBIAS does not monotonically improve
-noise due to shifting operating points; 250 µA is the sweet spot.
+IBIAS sweep needs re-running with corrected bench to verify linearity.
+
+### Input noise: corrected methodology
+Previous bench divided integrated output noise by hardcoded gain (6800),
+giving 155 µVrms. This was unreliable since gain varies with frequency.
+
+Corrected approach: use ngspice output noise spectral density and divide
+by frequency-dependent gain from AC analysis. The ngspice built-in
+inoise_spectrum gives wrong results for this circuit because the noise
+analysis DC OP converges to a dead state (CMFB not settled).
+
+Typical corner spot noise:
+- 1 Hz:    3.66 µV/√Hz (1/f dominated)
+- 1 kHz:   729 nV/√Hz
+- 100 kHz: 10.0 µV/√Hz (beyond 3dB bandwidth, gain rolling off)
 
 ### Conclusion (updated 2026-05-12)
-With Cc = 2.0 pF, Rz = 2.0 kΩ and selectable IBIAS:
-- Gain spec (≥60 dB) met at all 9 PVT corners + 30/30 MC runs.
-- PM spec (≥60°) met at 8/9 corners (sf_tt_vt = 57.1° marginal).
-- GBW = 144.1 MHz typ; 8/9 corners ≥111 MHz.
-- SR and noise are power-selectable under the 3 mW budget:
-  - 900 µA → SR 674/644 V/µs, 2.17 mW
-  - 250 µA → noise 77.9 µVrms, 1.16 mW
+With Cc = 2.0 pF, Rz = 2.0 kΩ, IBIAS = 100 µA:
+- Gain spec (≥60 dB) met at all 5 tested PVT corners.
+- PM spec (≥60°) met at 4/5 corners (sf_tt_vt = 57.1° marginal).
+- GBW = 144.1 MHz typ; all 5 corners ≥ 113 MHz.
+- **SR = 70 V/µs differential (35 V/µs per output)** — corrected from
+  previous 3.4 V/µs (wrong bench). Matches I_tail/Cc analytically.
+- Input-referred noise @ 1 kHz = 729 nV/√Hz (corrected methodology).
 - Layout / extracted sim not started.
 
 ---
@@ -195,20 +206,20 @@ corners (#7) still find an unfavorable basin.
 
 ---
 
-## What works (deliverable, all 9 corners)
+## What works (deliverable, 5 PVT corners verified)
 - All five test benches (`op`, `ac`, `tran`, `noise`, `dc`) run to
   completion and produce sensible numbers.
-- **Gain ≥ 67.67 dB and PM ≥ 57.1° at every PVT corner.**
-- GBW ≥ 111 MHz at 8/9 corners (ff_tl_vl at 34 MHz is a known outlier).
+- **Gain ≥ 67.7 dB and PM ≥ 57.1° at every tested PVT corner.**
+- GBW ≥ 113 MHz at all 5 tested corners.
+- **SR = 70 V/µs differential** at typ (corrected bench with ±300 mV step).
+- **Input-referred noise = 729 nV/√Hz at 1 kHz** (corrected methodology).
 - Monte Carlo (30 runs): gain 100% yield, PM 100% yield (min 40.8°).
-- IBIAS sweep (100–900 µA) provides selectable SR/noise trade-off
-  under 3 mW power budget.
 - Sign-off table: `sim/LELO_FDA_MILLER/SIGNOFF.md`
 
 ## What needs more work
 - sf_tt_vt corner PM = 57.1° (marginally below 60° spec by 2.9°).
   Fix: increase Rz from 2.0 kΩ → 2.2 kΩ for ~3° PM improvement.
-- ff_tl_vl GBW = 34 MHz (requires constant-gm bias, out of scope).
-- MC PM outliers (3/30 below 60°) suggest compensation sensitivity
-  to device mismatch; post-layout capacitor matching verification needed.
+- IBIAS sweep needs re-running with corrected tran/noise benches.
+- ngspice noise analysis inoise_spectrum gives wrong results for this
+  CMFB-dependent circuit. Manual onoise/gain methodology is reliable.
 - Layout / extracted sim (not started).

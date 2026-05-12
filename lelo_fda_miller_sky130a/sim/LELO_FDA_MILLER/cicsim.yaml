@@ -5,5 +5,5 @@ corner:
   Lay: ''
   Sch: ''
 ngspice:
-  library: LELO_5TOTA_PMOS_SKY130A
-  cell: LELO_5TOTA_PMOS
+  library: LELO_FDA_MILLER_SKY130A
+  cell: LELO_FDA_MILLER
