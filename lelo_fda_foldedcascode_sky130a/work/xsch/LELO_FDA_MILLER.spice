@@ -1,0 +1,78 @@
+.subckt LELO_FDA_MILLER VSS VDD VOUTP VOUTN IBIAS VINP VINN VCMREF
+* ====================================================================
+* Folded-Cascode FDA + Choksi-Carley CMFB.   SKY130A.
+*
+* Topology (simplified, robust biasing):
+*   NMOS pair (input)  -> sources current at folding nodes nfp,nfn
+*   PMOS current sources (gate=pbias) push 2x tail current into folding
+*       nodes -> excess folds DOWN through NMOS cascode
+*   NMOS cascode (gate=ncas) summing currents at VOUT
+*   NMOS sinks (gate=vctrl from CMFB) set V_OCM
+*   PMOS cascode (gate=pcas) at top for high Rout
+*
+* Bias plan (IBIAS = 100uA into chip via VSS):
+*   M_NB       : NMOS diode               -> 100u
+*   M_PB chain : NMOS mirror -> PMOS diode pbias  -> 100u
+*   Cascode biases pcas, ncas: simple resistor-set
+*
+* All PFETs use _lvt to avoid Vt headroom collapse across PVT.
+* ====================================================================
+
+* ---- Bias references -----------------------------------------------
+* NMOS diode at IBIAS (1x = 100uA reference)
+XMNB    IBIAS  IBIAS  VSS    VSS  sky130_fd_pr__nfet_01v8 L=1 W=4 nf=1 m=1
+* PMOS pbias diode generator: NMOS sinks IBIAS-mirrored current through PMOS diode
+XMPBN   pbias  IBIAS  VSS    VSS  sky130_fd_pr__nfet_01v8 L=1 W=4 nf=1 m=1
+XMPBD   pbias  pbias  VDD    VDD  sky130_fd_pr__pfet_01v8_lvt L=1 W=20 nf=2 m=1
+
+* ---- Cascode biases via diode-connected devices through bleed R ----
+* ---- Cascode biases via dedicated current branches -----------------
+* Branch P: 5uA branch via L=4 NMOS sink (W/L=0.105 = 5uA from IBIAS).
+* At 5uA, each PMOS Vgs ~ 0.62V -> pcas at ~0.55V.
+XMPC_S1  pmid1 pmid1  VDD    VDD  sky130_fd_pr__pfet_01v8_lvt L=1 W=10 nf=1 m=1
+XMPC_DIO pcas  pcas   pmid1  VDD  sky130_fd_pr__pfet_01v8_lvt L=1 W=10 nf=1 m=1
+XMBR_P   pcas  IBIAS  VSS    VSS  sky130_fd_pr__nfet_01v8 L=4 W=0.42 nf=1 m=1
+* Branch N: PMOS source via pbias -> NMOS diode (ncas) -> VSS
+XMSR_N   ncas  pbias  VDD    VDD  sky130_fd_pr__pfet_01v8_lvt L=1 W=10 nf=1 m=1
+XMNC_DIO ncas  ncas   VSS    VSS  sky130_fd_pr__nfet_01v8 L=0.5 W=4 nf=1 m=1
+
+* ---- NMOS pair tail (200uA: 2x mirror of MNB) ----------------------
+XMT    ntail  IBIAS  VSS    VSS  sky130_fd_pr__nfet_01v8 L=1 W=8 nf=2 m=1
+
+* ---- NMOS input pair (100 uA each) ---------------------------------
+XM1    nfp    VINP   ntail  VSS  sky130_fd_pr__nfet_01v8 L=0.5 W=100 nf=10 m=1
+XM2    nfn    VINN   ntail  VSS  sky130_fd_pr__nfet_01v8 L=0.5 W=100 nf=10 m=1
+
+* ---- PMOS current sources at folding nodes (200 uA each: 2x mirror) -
+* M3/M4 are large enough to supply 2x input-pair current; excess folds.
+XM3    nfp    pbias  VDD    VDD  sky130_fd_pr__pfet_01v8_lvt L=2 W=160 nf=16 m=1
+XM4    nfn    pbias  VDD    VDD  sky130_fd_pr__pfet_01v8_lvt L=2 W=160 nf=16 m=1
+
+* ---- PMOS cascode (gate=pcas) folding node -> VOUT -----------------
+XM5    VOUTP  pcas   nfp    VDD  sky130_fd_pr__pfet_01v8_lvt L=1 W=80 nf=8 m=1
+XM6    VOUTN  pcas   nfn    VDD  sky130_fd_pr__pfet_01v8_lvt L=1 W=80 nf=8 m=1
+
+* ---- NMOS cascode (gate=ncas) VOUT -> internal node ----------------
+XM7    VOUTP  ncas   nlowp  VSS  sky130_fd_pr__nfet_01v8 L=2 W=120 nf=12 m=1
+XM8    VOUTN  ncas   nlown  VSS  sky130_fd_pr__nfet_01v8 L=2 W=120 nf=12 m=1
+
+* ---- NMOS sinks driven by CMFB vctrl (~100uA each = M1 - 0 folded) -
+XM9    nlowp  vctrl  VSS    VSS  sky130_fd_pr__nfet_01v8 L=2 W=80 nf=8 m=1
+XM10   nlown  vctrl  VSS    VSS  sky130_fd_pr__nfet_01v8 L=2 W=80 nf=8 m=1
+
+* ---- Choksi-Carley CMFB --------------------------------------------
+XQTP   stailp IBIAS  VSS    VSS  sky130_fd_pr__nfet_01v8 L=1 W=10 nf=1 m=1
+XQTN   stailn IBIAS  VSS    VSS  sky130_fd_pr__nfet_01v8 L=1 W=10 nf=1 m=1
+XQVOP  vd     VOUTP  stailp VSS  sky130_fd_pr__nfet_01v8 L=0.5 W=30 nf=1 m=1
+XQVCMP vctrl  VCMREF stailp VSS  sky130_fd_pr__nfet_01v8 L=0.5 W=30 nf=1 m=1
+XQVON  vd     VOUTN  stailn VSS  sky130_fd_pr__nfet_01v8 L=0.5 W=30 nf=1 m=1
+XQVCMN vctrl  VCMREF stailn VSS  sky130_fd_pr__nfet_01v8 L=0.5 W=30 nf=1 m=1
+XQDP   vd     vd     VDD    VDD  sky130_fd_pr__pfet_01v8_lvt L=1 W=30 nf=1 m=1
+XQDN   vctrl  vd     VDD    VDD  sky130_fd_pr__pfet_01v8_lvt L=1 W=30 nf=1 m=1
+CCMC   vctrl  VSS    2p
+
+* ---- Startup leak at folding nodes (helps OP) ----------------------
+RSTUFP nfp   VSS   20Meg
+RSTUFN nfn   VSS   20Meg
+
+.ends

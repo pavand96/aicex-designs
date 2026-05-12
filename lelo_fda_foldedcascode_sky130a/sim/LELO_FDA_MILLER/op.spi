@@ -1,0 +1,97 @@
+*TB LELO_FDA_MILLER (folded cascode, PMOS input) — OP and bias check
+.include ../../../work/xsch/LELO_FDA_MILLER.spice
+.option TNOM=27 GMIN=1e-12 reltol=1e-3 srcsteps=20 itl1=500 itl6=300 abstol=1e-12
+
+.param vcm = 'vdda/2'
+.param ibias_val = 100u
+.param CL_val    = 2.5p
+.param vos       = 0.9
+
+VSS    VSS    0      dc 0
+VDD    VDD    0      dc {vdda}
+VVCMREF VCMREF 0     dc {vcm}
+VVINP  VINP   0      dc {vos}
+VVINN  VINN   0      dc {vcm}
+IIBIAS VSS    IBIAS  dc {ibias_val}
+CLP    VOUTP  VSS    {CL_val}
+CLN    VOUTN  VSS    {CL_val}
+.include ../xdut.spi
+
+* Startup-friendly initial conditions
+.nodeset v(ibias)        = 1.05
+.nodeset v(xdut.pbias)   = 1.07
+.nodeset v(xdut.pcas)    = 0.55
+.nodeset v(xdut.pmid1)   = 1.30
+.nodeset v(xdut.pmid2)   = 0.90
+.nodeset v(xdut.ncas)    = 0.70
+.nodeset v(xdut.ntail)   = 0.23
+.nodeset v(xdut.nfp)     = 1.20
+.nodeset v(xdut.nfn)     = 1.20
+.nodeset v(xdut.nlowp)   = 0.20
+.nodeset v(xdut.nlown)   = 0.20
+.nodeset v(xdut.vctrl)   = 0.75
+.nodeset v(xdut.vd)      = 1.05
+.nodeset v(voutp)        = {vcm}
+.nodeset v(voutn)        = {vcm}
+.nodeset v(xdut.stailp)  = 0.25
+.nodeset v(xdut.stailn)  = 0.25
+
+.ic v(xdut.vctrl) = 0.75
+.ic v(xdut.pbias) = 1.07
+.ic v(xdut.pcas)  = 0.55
+.ic v(xdut.ncas)  = 0.70
+.ic v(xdut.ntail) = 0.23
+.ic v(xdut.nfp)   = 1.20
+.ic v(xdut.nfn)   = 1.20
+.ic v(xdut.nlowp) = 0.20
+.ic v(xdut.nlown) = 0.20
+.ic v(voutp)      = {vcm}
+.ic v(voutn)      = {vcm}
+.ic v(xdut.vd)    = 1.05
+
+.save all
+
+.control
+set num_threads=8
+unset askquit
+set filetype=ascii
+tran 10n 200u uic
+op
+
+echo ""
+echo "===== Bias points ====="
+print v(voutp) v(voutn) v(xdut.nfp) v(xdut.nfn) v(xdut.nlowp) v(xdut.nlown)
+print v(xdut.pbias) v(xdut.pcas) v(xdut.ncas) v(xdut.ntail) v(xdut.vctrl) v(xdut.vd) v(ibias)
+
+* Currents (referenced from device terminal currents)
+let id_m1   =  @m.xdut.xm1.msky130_fd_pr__nfet_01v8[id]
+let id_m3   = -@m.xdut.xm3.msky130_fd_pr__pfet_01v8_lvt[id]
+let id_m7   =  @m.xdut.xm7.msky130_fd_pr__nfet_01v8[id]
+let id_m9   =  @m.xdut.xm9.msky130_fd_pr__nfet_01v8[id]
+let id_mt   =  @m.xdut.xmt.msky130_fd_pr__nfet_01v8[id]
+
+let gm1     = @m.xdut.xm1.msky130_fd_pr__nfet_01v8[gm]
+let gm5     = @m.xdut.xm5.msky130_fd_pr__pfet_01v8_lvt[gm]
+let gm7     = @m.xdut.xm7.msky130_fd_pr__nfet_01v8[gm]
+let gds_m3  = @m.xdut.xm3.msky130_fd_pr__pfet_01v8_lvt[gds]
+let gds_m5  = @m.xdut.xm5.msky130_fd_pr__pfet_01v8_lvt[gds]
+let gds_m7  = @m.xdut.xm7.msky130_fd_pr__nfet_01v8[gds]
+let gds_m9  = @m.xdut.xm9.msky130_fd_pr__nfet_01v8[gds]
+
+let Rout_p  = gm5 / (gds_m5 * gds_m3)
+let Rout_n  = gm7 / (gds_m7 * gds_m9)
+let Rout    = Rout_p * Rout_n / (Rout_p + Rout_n)
+let A_tot   = gm1 * Rout
+let A_tot_db = 20*log10(A_tot)
+
+echo ""
+echo "===== Currents (A) ====="
+print id_mt id_m1 id_m3 id_m7 id_m9
+echo ""
+echo "===== Small-signal ====="
+print gm1 gm5 gm7 Rout_p Rout_n Rout A_tot A_tot_db
+
+write {cicname}.raw
+quit
+.endc
+.end
