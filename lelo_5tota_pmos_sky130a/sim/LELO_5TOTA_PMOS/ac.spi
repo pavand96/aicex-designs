@@ -17,7 +17,7 @@
 * PARAMETERS
 *-----------------------------------------------------------------
 .param AVDD     = 1.8
-.param vcm      = 0.9
+.param vcm      = 0.4
 * Forced tail bias current into diode M4 (W=50,L=1.0) — M4 self-biases, M6 mirrors
 .param ibias_val = 6.26u
 * Load capacitor at output (typical OTA test: 1pF)

@@ -18,7 +18,7 @@
 * PARAMETERS
 *-----------------------------------------------------------------
 .param AVDD      = 1.8
-.param vcm       = 0.9
+.param vcm       = 0.4
 
 * IBIAS current injected into diode-connected NMOS bias device.
 * XM6 is diode-connected at node IBIAS and sets VGS.
@@ -48,10 +48,10 @@ IIBIAS  IBIAS   VSS     dc {ibias_val}  $ PMOS diode: drain current from IBIAS t
 *----------------------------------------------------------------
 * NODESET — guides Newton solver starting point
 *----------------------------------------------------------------
-.nodeset v(vout)       = 1.05
-.nodeset v(xdut.net1)  = 0.45
-.nodeset v(xdut.net2)  = 0.80
-.nodeset v(ibias)      = 0.55
+.nodeset v(vout)       = 0.75   $ mid-rail target (NMOS load Vds)
+.nodeset v(xdut.net1)  = 1.35   $ tail node — close to VDD (PMOS source)
+.nodeset v(xdut.net2)  = 0.50   $ NMOS diode mirror node (~Vth_n + Vov)
+.nodeset v(ibias)      = 1.00   $ PMOS bias diode: VDD - |Vgs|
 
 *----------------------------------------------------------------
 * SAVE
