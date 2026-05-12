@@ -1,0 +1,65 @@
+*TB LELO_CHERRY_HOOPER — AC differential gain
+.include ../../../work/xsch/LELO_CHERRY_HOOPER.spice
+
+.option TNOM=27
+
+.param AVDD     = 1.8
+.param vcm      = 0.9
+.param vbiasn   = 0.7
+.param vbiasp   = 0.4
+.param CL_val   = 100f
+
+VSS    VSS    0      dc 0
+VDD    VDD    0      dc {AVDD}
+VVINP  VINP   0      dc {vcm} ac  0.5
+VVINM  VINN   0      dc {vcm} ac -0.5
+VBN    VBIASN VSS    dc {vbiasn}
+VBP    VBIASP VSS    dc {vbiasp}
+
+CL_P   VOUTP  VSS    {CL_val}
+CL_N   VOUTN  VSS    {CL_val}
+
+.include ../xdut.spi
+
+.nodeset v(voutp)        = 1.14
+.nodeset v(voutn)        = 1.14
+.nodeset v(xdut.nA)      = 1.14
+.nodeset v(xdut.nB)      = 1.14
+.nodeset v(xdut.ntail1)  = 0.20
+.nodeset v(xdut.ntail2)  = 0.32
+
+.save all
+
+.control
+set num_threads=8
+unset askquit
+set filetype=ascii
+
+ac dec 100 1 10G
+
+let vidiff      = v(vinp) - v(vinn)
+let vodiff      = v(voutp) - v(voutn)
+let gain_mag_db = 20*log10(abs(vodiff)) - 20*log10(abs(vidiff))
+let gain_ph_deg = 180/PI * (vp(voutp) - vp(voutn))
+
+meas ac dc_gain_db FIND gain_mag_db AT=1
+let f3db_target = dc_gain_db - 3
+meas ac f3db       WHEN gain_mag_db = f3db_target
+meas ac fgbw       WHEN gain_mag_db = 0
+meas ac phase_ugf  FIND gain_ph_deg WHEN gain_mag_db = 0
+let pm = phase_ugf + 180
+
+echo ""
+echo "================================================"
+echo "  CHERRY-HOOPER — AC RESULTS (differential)"
+echo "================================================"
+print dc_gain_db
+print f3db
+print fgbw
+print phase_ugf
+print pm
+
+write {cicname}.raw
+quit
+.endc
+.end

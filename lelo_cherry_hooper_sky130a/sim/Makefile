@@ -1,0 +1,4 @@
+include ../tech/make/sim.make
+
+LIB=LELO_CHERRY_HOOPER_SKY130A
+CELL=LELO_CHERRY_HOOPER

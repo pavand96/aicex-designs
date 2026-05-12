@@ -1,0 +1,4 @@
+LIB=LELO_CHERRY_HOOPER_SKY130A
+CELL=LELO_CHERRY_HOOPER
+
+include tech/make/main.make

@@ -14,6 +14,7 @@ Analog IC design work using the [aicex](https://analogicus.com/aicex/) framework
 | [`lelo_ex1_sky130a`](#2-lelo_ex1_sky130a--common-source-amplifier) | CS amplifier | AC, DC, OP, Tran, Sweep | Peak gain 23.47 dB, GBW up to 12.7 GHz |
 | [`lelo_5tota_sky130a`](#3-lelo_5tota_sky130a--5-transistor-ota) | 5T OTA (NMOS input) | AC, DC (ICMR/OCMR), OP, Tran, Slew | Open-loop gain, phase margin, CMRR |
 | [`lelo_5tota_pmos_sky130a`](lelo_5tota_pmos_sky130a/sim/LELO_5TOTA_PMOS/README.md) | 5T OTA (**PMOS input**) | Same as above | Complementary topology — low 1/f noise, ground-near input CMR |
+| [`lelo_cherry_hooper_sky130a`](lelo_cherry_hooper_sky130a/README.md) | **Cherry-Hooper** wide-band amp | OP, AC | DC gain 7.3 dB, **GBW = 2.34 GHz**, sized for max GBW |
 | [`lelo_modele_sky130a`](#4-lelo_modele_sky130a--nmos-device-characterization) | NMOS char. | 2D DC sweep, multi-corner | 47k+ data points across tt/ss/ff corners |
 | [`lelo_pmodele_sky130a`](#5-lelo_pmodele_sky130a--pmos-device-characterization) | PMOS char. | 2D DC sweep, multi-corner | Mirrors NMOS campaign for PMOS devices |
 
