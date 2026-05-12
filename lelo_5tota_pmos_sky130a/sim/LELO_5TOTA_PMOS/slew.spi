@@ -1,0 +1,151 @@
+*TB LELO_5TOTA_PMOS — Slew Rate / Large-Signal Transient
+*----------------------------------------------------------------
+* Include
+*----------------------------------------------------------------
+#ifdef Lay
+.include ../../../work/lpe/LELO_5TOTA_PMOS_lpe.spi
+#else
+.include ../../../work/xsch/LELO_5TOTA_PMOS.spice
+#endif
+
+*-----------------------------------------------------------------
+* OPTIONS
+*-----------------------------------------------------------------
+.option TNOM=27 GMIN=1e-15 reltol=1e-3
+.temp 27
+
+*-----------------------------------------------------------------
+* PARAMETERS
+*-----------------------------------------------------------------
+.param AVDD      = 1.8
+.param vcm       = 0.9
+.param ibias_val = 6.26u
+* Step amplitude (full swing to trigger slewing on both sides)
+.param vstep     = 0.4
+
+*-----------------------------------------------------------------
+* SOURCES
+*-----------------------------------------------------------------
+VSS    VSS    0      dc 0
+VDD    VDD    0      dc {AVDD}
+
+* VINP: step input to demonstrate switch commutation of M1/M2
+* PULSE: starts at vcm-vstep (M1~off/M2~on), steps to vcm+vstep (M1~on/M2~off)
+VVINP  VINP   0   dc {vcm} PULSE({vcm-vstep} {vcm+vstep} 200n 1n 1n 2u 4u)
+
+* VINN: held at VCM (reference, single-ended drive to trigger full slew)
+VVINM  VINN   0   dc {vcm}
+
+* Bias current
+IIBIAS IBIAS VSS  dc {ibias_val}  $ PMOS diode: current drawn from IBIAS to VSS
+
+*-----------------------------------------------------------------
+* LOAD — 1pF at VOUT (same as AC testbench)
+*-----------------------------------------------------------------
+CL     VOUT   VSS    1p
+
+*-----------------------------------------------------------------
+* DUT
+*-----------------------------------------------------------------
+.include ../xdut.spi
+
+*-----------------------------------------------------------------
+* NODESET — guide solver to correct op point
+*-----------------------------------------------------------------
+.nodeset v(vout)      = 0.82
+.nodeset v(xdut.net1) = 0.34
+.nodeset v(xdut.net2) = 0.82
+.nodeset v(ibias)     = 0.55
+
+*-----------------------------------------------------------------
+* SAVE
+*-----------------------------------------------------------------
+.save v(VINP) v(VINN) v(VOUT) v(IBIAS)
+.save v(xdut.net1) v(xdut.net2)
+* Drain currents — prove M1/M2 act as current-steering switches during slewing
+.save @m.xdut.xm1.msky130_fd_pr__pfet_01v8[id]
+.save @m.xdut.xm2.msky130_fd_pr__pfet_01v8[id]
+.save @m.xdut.xm3.msky130_fd_pr__nfet_01v8[id]
+.save @m.xdut.xm4.msky130_fd_pr__nfet_01v8[id]
+.save @m.xdut.xm5.msky130_fd_pr__pfet_01v8[id]
+
+*-----------------------------------------------------------------
+* NGSPICE control
+*-----------------------------------------------------------------
+.control
+set num_threads=8
+unset askquit
+set filetype=ascii
+
+* Run op first to settle bias
+op
+echo "--- DC operating point ---"
+print v(xdut.net1) v(xdut.net2) v(vout)
+
+* Transient: 3 pulse periods = 12µs, 1ns timestep
+tran 1n 12u
+
+* ----------------------------------------------------------------
+* SWITCH COMMUTATION CHECK
+* ----------------------------------------------------------------
+* During SR+ (rising slew, t~200ns..2us): M1 carries ALL Itail, M2 = 0
+* During SR- (falling slew, t~2.2us..4us): M1 = 0, M2 carries ALL Itail
+* Tail current M5 stays constant = Itail throughout
+
+* Average currents during rising slew window
+meas tran id_m1_sr_plus  AVG @m.xdut.xm1.msky130_fd_pr__pfet_01v8[id] FROM=500n  TO=1.5u
+meas tran id_m2_sr_plus  AVG @m.xdut.xm2.msky130_fd_pr__pfet_01v8[id] FROM=500n  TO=1.5u
+meas tran id_m5_sr_plus  AVG @m.xdut.xm5.msky130_fd_pr__pfet_01v8[id] FROM=500n  TO=1.5u
+
+* Average currents during falling slew window
+* Falling edge at t=2.2us (Td+Pw), slew ~128ns → window 2.21us..2.32us
+meas tran id_m1_sr_minus AVG @m.xdut.xm1.msky130_fd_pr__pfet_01v8[id] FROM=2.21u TO=2.32u
+meas tran id_m2_sr_minus AVG @m.xdut.xm2.msky130_fd_pr__pfet_01v8[id] FROM=2.21u TO=2.32u
+meas tran id_m5_sr_minus AVG @m.xdut.xm5.msky130_fd_pr__pfet_01v8[id] FROM=2.21u TO=2.32u
+
+* SR measurements (10%..90% of swing, swing=0.8V → 10%=0.58V, 90%=1.22V)
+meas tran t10_rise  WHEN v(vout) = 0.58  RISE=1
+meas tran t90_rise  WHEN v(vout) = 1.22  RISE=1
+meas tran t90_fall  WHEN v(vout) = 1.22  FALL=1
+meas tran t10_fall  WHEN v(vout) = 0.58  FALL=2
+
+echo ""
+echo "====================================================="
+echo "  5T OTA — SWITCH COMMUTATION + SLEW ANALYSIS"
+echo "====================================================="
+echo ""
+echo "--- SWITCH BEHAVIOR (interview key insight) ---"
+echo "During SR+: M1 = Itail (ON), M2 = 0 (OFF)"
+echo "  Id_M1 (should = Itail~6.26uA):"
+print id_m1_sr_plus
+echo "  Id_M2 (should = 0):"
+print id_m2_sr_plus
+echo "  Id_M5 tail (constant = Itail):"
+print id_m5_sr_plus
+echo ""
+echo "During SR-: M1 = 0 (OFF), M2 = Itail (ON)"
+echo "  Id_M1 (should = 0):"
+print id_m1_sr_minus
+echo "  Id_M2 (should = Itail~6.26uA):"
+print id_m2_sr_minus
+echo "  Id_M5 tail (constant = Itail):"
+print id_m5_sr_minus
+echo ""
+echo "--- SLEW RATE RESULTS ---"
+let sr_plus  = (1.22 - 0.58) / (t90_rise - t10_rise)
+let sr_minus = (1.22 - 0.58) / (t10_fall - t90_fall)
+let sr_plus_vus  = sr_plus  / 1e6
+let sr_minus_vus = sr_minus / 1e6
+echo "  SR+ (V/us):"
+print sr_plus_vus
+echo "  SR- (V/us):"
+print sr_minus_vus
+echo "  Theory: SR = Itail/CL = 6.26uA/1pF = 6.26 V/us"
+echo ""
+echo "Key: SR = Itail/CL, not f(gm,W,L) — because M1/M2 are switches, not amplifiers"
+
+write {cicname}.raw
+quit
+.endc
+
+.end

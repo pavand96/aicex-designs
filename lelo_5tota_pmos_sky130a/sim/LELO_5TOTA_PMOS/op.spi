@@ -1,0 +1,276 @@
+*TB LELO_5TOTA_PMOS — Operating Point
+*----------------------------------------------------------------
+* Include
+*----------------------------------------------------------------
+#ifdef Lay
+.include ../../../work/lpe/LELO_5TOTA_PMOS_lpe.spi
+#else
+.include ../../../work/xsch/LELO_5TOTA_PMOS.spice
+#endif
+
+*-----------------------------------------------------------------
+* OPTIONS
+*-----------------------------------------------------------------
+.option TNOM=27 GMIN=1e-15 reltol=1e-3 srcsteps=20
+.temp 27
+
+*-----------------------------------------------------------------
+* PARAMETERS
+*-----------------------------------------------------------------
+.param AVDD      = 1.8
+.param vcm       = 0.9
+
+* IBIAS current injected into diode-connected NMOS bias device.
+* XM6 is diode-connected at node IBIAS and sets VGS.
+* XM5 uses the same gate bias and mirrors the bias current as tail current.
+* If XM5 and XM6 are matched, I_TAIL will be approximately ibias_val.
+.param ibias_val = 6.26u
+
+*-----------------------------------------------------------------
+* SOURCES
+*-----------------------------------------------------------------
+VSS     VSS     0       dc 0
+VDD     VDD     0       dc {AVDD}
+VVINP   VINP    0       dc {vcm}
+VVINM   VINN    0       dc {vcm}
+
+* Current injected into IBIAS node.
+* SPICE current flows from first node to second node:
+* IIBIAS VSS IBIAS dc {ibias_val}
+* means current flows from VSS -> IBIAS, i.e. enters IBIAS node.
+IIBIAS  IBIAS   VSS     dc {ibias_val}  $ PMOS diode: drain current from IBIAS to VSS
+
+*-----------------------------------------------------------------
+* DUT
+*-----------------------------------------------------------------
+.include ../xdut.spi
+
+*----------------------------------------------------------------
+* NODESET — guides Newton solver starting point
+*----------------------------------------------------------------
+.nodeset v(vout)       = 1.05
+.nodeset v(xdut.net1)  = 0.45
+.nodeset v(xdut.net2)  = 0.80
+.nodeset v(ibias)      = 0.55
+
+*----------------------------------------------------------------
+* SAVE
+*----------------------------------------------------------------
+.save all
+.save v(VDD) v(VSS) v(VINP) v(VINN) v(IBIAS) v(VOUT)
+.save v(xdut.net1) v(xdut.net2)
+.save i(VDD) i(IIBIAS)
+
+*----------------------------------------------------------------
+* NGSPICE control
+*----------------------------------------------------------------
+.control
+set num_threads=8
+unset askquit
+set filetype=ascii
+
+op
+
+echo "================================================"
+echo "  5T OTA — ALL NODE VOLTAGES (quiescent)"
+echo "================================================"
+echo ""
+echo "--- Supply / Inputs ---"
+print v(vdd) v(vss)
+print v(vinp) v(vinn)
+echo ""
+echo "--- Bias node ---"
+print v(ibias)
+echo ""
+echo "--- Internal nodes ---"
+echo "  xdut.net1  = Vtail   (source of XM2/XM1, drain of XM5)"
+print v(xdut.net1)
+echo "  xdut.net2  = Vmirror (drain of XM1/XM3-diode, gate of XM3/XM4)"
+print v(xdut.net2)
+echo "  vout       = VOUT    (drain of XM2/XM4)"
+print v(vout)
+echo ""
+
+echo "--- Device currents ---"
+echo "  XM2 (nfet input, G=VINN):"
+print @m.xdut.xm2.msky130_fd_pr__pfet_01v8[id]
+echo "  XM1 (nfet input, G=VINP):"
+print @m.xdut.xm1.msky130_fd_pr__pfet_01v8[id]
+echo "  XM3 (pfet diode, D=G=net2):"
+print @m.xdut.xm3.msky130_fd_pr__nfet_01v8[id]
+echo "  XM4 (pfet mirror output, D=VOUT):"
+print @m.xdut.xm4.msky130_fd_pr__nfet_01v8[id]
+echo "  XM5 (nfet tail, G=IBIAS, D=net1):"
+print @m.xdut.xm5.msky130_fd_pr__pfet_01v8[id]
+echo "  XM6 (nfet bias diode, D=G=IBIAS):"
+print @m.xdut.xm6.msky130_fd_pr__pfet_01v8[id]
+echo ""
+
+echo "--- Device gm / gds ---"
+echo "  XM2 gm:"
+print @m.xdut.xm2.msky130_fd_pr__pfet_01v8[gm]
+echo "  XM1 gm:"
+print @m.xdut.xm1.msky130_fd_pr__pfet_01v8[gm]
+echo "  XM4 gm:"
+print @m.xdut.xm4.msky130_fd_pr__nfet_01v8[gm]
+echo "  XM5 gm:"
+print @m.xdut.xm5.msky130_fd_pr__pfet_01v8[gm]
+echo "  XM2 gds:"
+print @m.xdut.xm2.msky130_fd_pr__pfet_01v8[gds]
+echo "  XM1 gds:"
+print @m.xdut.xm1.msky130_fd_pr__pfet_01v8[gds]
+echo "  XM4 gds:"
+print @m.xdut.xm4.msky130_fd_pr__nfet_01v8[gds]
+echo "  XM5 gds:"
+print @m.xdut.xm5.msky130_fd_pr__pfet_01v8[gds]
+echo ""
+
+echo "--- Device threshold / vdsat ---"
+echo "  XM2:"
+print @m.xdut.xm2.msky130_fd_pr__pfet_01v8[vth]
+print @m.xdut.xm2.msky130_fd_pr__pfet_01v8[vdsat]
+echo "  XM1:"
+print @m.xdut.xm1.msky130_fd_pr__pfet_01v8[vth]
+print @m.xdut.xm1.msky130_fd_pr__pfet_01v8[vdsat]
+echo "  XM3:"
+print @m.xdut.xm3.msky130_fd_pr__nfet_01v8[vth]
+print @m.xdut.xm3.msky130_fd_pr__nfet_01v8[vdsat]
+echo "  XM4:"
+print @m.xdut.xm4.msky130_fd_pr__nfet_01v8[vth]
+print @m.xdut.xm4.msky130_fd_pr__nfet_01v8[vdsat]
+echo "  XM5:"
+print @m.xdut.xm5.msky130_fd_pr__pfet_01v8[vth]
+print @m.xdut.xm5.msky130_fd_pr__pfet_01v8[vdsat]
+echo "  XM6:"
+print @m.xdut.xm6.msky130_fd_pr__pfet_01v8[vth]
+print @m.xdut.xm6.msky130_fd_pr__pfet_01v8[vdsat]
+echo ""
+
+* ──────────────────────────────────────────────────────────────────────
+echo "================================================"
+echo "  REGION CHECK  USING VDSAT"
+echo "  NMOS: saturation when VDS > VDSAT"
+echo "  PMOS: ngspice reports PMOS in NMOS-equivalent coordinates,"
+echo "        so use VSD > VDSAT"
+echo "================================================"
+echo ""
+
+* ── XM2: NMOS  G=VINN  D=VOUT  S=net1 ──────────────────────────────
+let xm2_vgs      = @m.xdut.xm2.msky130_fd_pr__pfet_01v8[vgs]
+let xm2_vds      = @m.xdut.xm2.msky130_fd_pr__pfet_01v8[vds]
+let xm2_vth      = @m.xdut.xm2.msky130_fd_pr__pfet_01v8[vth]
+let xm2_vdsat    = @m.xdut.xm2.msky130_fd_pr__pfet_01v8[vdsat]
+let xm2_satmargin = xm2_vds - xm2_vdsat
+echo "  XM2  NMOS   G=VINN  D=VOUT  S=net1"
+echo "      VGS (V)   = $&xm2_vgs"
+echo "      VDS (V)   = $&xm2_vds"
+echo "      VTH (V)   = $&xm2_vth"
+echo "      VDSAT (V) = $&xm2_vdsat"
+echo "      Margin    = VDS - VDSAT = $&xm2_satmargin"
+if xm2_satmargin > 0
+    echo "      --> SATURATION  (VDS > VDSAT)"
+else
+    echo "      --> NOT IN SATURATION  (VDS < VDSAT)"
+end
+echo ""
+
+* ── XM1: NMOS  G=VINP  D=net2  S=net1 ──────────────────────────────
+let xm1_vgs      = @m.xdut.xm1.msky130_fd_pr__pfet_01v8[vgs]
+let xm1_vds      = @m.xdut.xm1.msky130_fd_pr__pfet_01v8[vds]
+let xm1_vth      = @m.xdut.xm1.msky130_fd_pr__pfet_01v8[vth]
+let xm1_vdsat    = @m.xdut.xm1.msky130_fd_pr__pfet_01v8[vdsat]
+let xm1_satmargin = xm1_vds - xm1_vdsat
+echo "  XM1  NMOS   G=VINP  D=net2  S=net1"
+echo "      VGS (V)   = $&xm1_vgs"
+echo "      VDS (V)   = $&xm1_vds"
+echo "      VTH (V)   = $&xm1_vth"
+echo "      VDSAT (V) = $&xm1_vdsat"
+echo "      Margin    = VDS - VDSAT = $&xm1_satmargin"
+if xm1_satmargin > 0
+    echo "      --> SATURATION  (VDS > VDSAT)"
+else
+    echo "      --> NOT IN SATURATION  (VDS < VDSAT)"
+end
+echo ""
+
+* ── XM3: PMOS diode  G=D=net2  S=VDD ───────────────────────────────
+let xm3_vgs      = @m.xdut.xm3.msky130_fd_pr__nfet_01v8[vgs]
+let xm3_vds      = @m.xdut.xm3.msky130_fd_pr__nfet_01v8[vds]
+let xm3_vth      = @m.xdut.xm3.msky130_fd_pr__nfet_01v8[vth]
+let xm3_vdsat    = @m.xdut.xm3.msky130_fd_pr__nfet_01v8[vdsat]
+let xm3_satmargin = xm3_vds - xm3_vdsat
+echo "  XM3  PMOS   G=D=net2  S=VDD  (diode)"
+echo "      VSG (V)   = $&xm3_vgs"
+echo "      VSD (V)   = $&xm3_vds"
+echo "      VTH (V)   = $&xm3_vth"
+echo "      VDSAT (V) = $&xm3_vdsat"
+echo "      Margin    = VSD - VDSAT = $&xm3_satmargin"
+if xm3_satmargin > 0
+    echo "      --> SATURATION  (VSD > VDSAT)"
+else
+    echo "      --> NOT IN SATURATION  (VSD < VDSAT)"
+end
+echo ""
+
+* ── XM4: PMOS mirror output  G=net2  D=VOUT  S=VDD ─────────────────
+let xm4_vgs      = @m.xdut.xm4.msky130_fd_pr__nfet_01v8[vgs]
+let xm4_vds      = @m.xdut.xm4.msky130_fd_pr__nfet_01v8[vds]
+let xm4_vth      = @m.xdut.xm4.msky130_fd_pr__nfet_01v8[vth]
+let xm4_vdsat    = @m.xdut.xm4.msky130_fd_pr__nfet_01v8[vdsat]
+let xm4_satmargin = xm4_vds - xm4_vdsat
+echo "  XM4  PMOS   G=net2  D=VOUT  S=VDD  (mirror out)"
+echo "      VSG (V)   = $&xm4_vgs"
+echo "      VSD (V)   = $&xm4_vds"
+echo "      VTH (V)   = $&xm4_vth"
+echo "      VDSAT (V) = $&xm4_vdsat"
+echo "      Margin    = VSD - VDSAT = $&xm4_satmargin"
+if xm4_satmargin > 0
+    echo "      --> SATURATION  (VSD > VDSAT)"
+else
+    echo "      --> NOT IN SATURATION  (VSD < VDSAT)"
+end
+echo ""
+
+* ── XM5: NMOS tail  G=IBIAS  D=net1  S=VSS ─────────────────────────
+let xm5_vgs      = @m.xdut.xm5.msky130_fd_pr__pfet_01v8[vgs]
+let xm5_vds      = @m.xdut.xm5.msky130_fd_pr__pfet_01v8[vds]
+let xm5_vth      = @m.xdut.xm5.msky130_fd_pr__pfet_01v8[vth]
+let xm5_vdsat    = @m.xdut.xm5.msky130_fd_pr__pfet_01v8[vdsat]
+let xm5_satmargin = xm5_vds - xm5_vdsat
+echo "  XM5  NMOS   G=IBIAS  D=net1  S=VSS  (tail)"
+echo "      VGS (V)   = $&xm5_vgs"
+echo "      VDS (V)   = $&xm5_vds"
+echo "      VTH (V)   = $&xm5_vth"
+echo "      VDSAT (V) = $&xm5_vdsat"
+echo "      Margin    = VDS - VDSAT = $&xm5_satmargin"
+if xm5_satmargin > 0
+    echo "      --> SATURATION  (VDS > VDSAT)"
+else
+    echo "      --> NOT IN SATURATION  (VDS < VDSAT)"
+end
+echo ""
+
+* ── XM6: NMOS bias diode  G=D=IBIAS  S=VSS ─────────────────────────
+let xm6_vgs      = @m.xdut.xm6.msky130_fd_pr__pfet_01v8[vgs]
+let xm6_vds      = @m.xdut.xm6.msky130_fd_pr__pfet_01v8[vds]
+let xm6_vth      = @m.xdut.xm6.msky130_fd_pr__pfet_01v8[vth]
+let xm6_vdsat    = @m.xdut.xm6.msky130_fd_pr__pfet_01v8[vdsat]
+let xm6_satmargin = xm6_vds - xm6_vdsat
+echo "  XM6  NMOS   G=D=IBIAS  S=VSS  (bias diode)"
+echo "      VGS (V)   = $&xm6_vgs"
+echo "      VDS (V)   = $&xm6_vds"
+echo "      VTH (V)   = $&xm6_vth"
+echo "      VDSAT (V) = $&xm6_vdsat"
+echo "      Margin    = VDS - VDSAT = $&xm6_satmargin"
+if xm6_satmargin > 0
+    echo "      --> SATURATION  (VDS > VDSAT)"
+else
+    echo "      --> NOT IN SATURATION  (VDS < VDSAT)"
+end
+echo ""
+
+write {cicname}.raw
+quit
+.endc
+
+.end

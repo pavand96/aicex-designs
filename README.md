@@ -12,9 +12,12 @@ Analog IC design work using the [aicex](https://analogicus.com/aicex/) framework
 |--------|------|-------------|-------------|
 | [`lelo_ex_sky130a`](#1-lelo_ex_sky130a--current-mirror-exercise) | Current mirror | Transient | $I_{out}$ = 19.4 µA, $V_{GS}$ = 1.005 V |
 | [`lelo_ex1_sky130a`](#2-lelo_ex1_sky130a--common-source-amplifier) | CS amplifier | AC, DC, OP, Tran, Sweep | Peak gain 23.47 dB, GBW up to 12.7 GHz |
-| [`lelo_5tota_sky130a`](#3-lelo_5tota_sky130a--5-transistor-ota) | 5T OTA | AC, DC (ICMR/OCMR), OP, Tran, Slew | Open-loop gain, phase margin, CMRR |
+| [`lelo_5tota_sky130a`](#3-lelo_5tota_sky130a--5-transistor-ota) | 5T OTA (NMOS input) | AC, DC (ICMR/OCMR), OP, Tran, Slew | Open-loop gain, phase margin, CMRR |
+| [`lelo_5tota_pmos_sky130a`](lelo_5tota_pmos_sky130a/sim/LELO_5TOTA_PMOS/README.md) | 5T OTA (**PMOS input**) | Same as above | Complementary topology — low 1/f noise, ground-near input CMR |
 | [`lelo_modele_sky130a`](#4-lelo_modele_sky130a--nmos-device-characterization) | NMOS char. | 2D DC sweep, multi-corner | 47k+ data points across tt/ss/ff corners |
 | [`lelo_pmodele_sky130a`](#5-lelo_pmodele_sky130a--pmos-device-characterization) | PMOS char. | 2D DC sweep, multi-corner | Mirrors NMOS campaign for PMOS devices |
+
+> **New:** See [`SCH_TO_SPICE_GUIDE.md`](SCH_TO_SPICE_GUIDE.md) for a practical guide to the xschem `.sch` ↔ ngspice `.spice` workflow, including a worked recipe for the NMOS→PMOS 5T OTA conversion.
 
 ---
 

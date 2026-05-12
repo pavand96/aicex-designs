@@ -1,0 +1,204 @@
+*TB LELO_5TOTA_PMOS — DC Analysis (ICMR and OCMR)
+*
+*  ICMR sweep: VINP = VINN = VCM swept 0→VDD, output floating (R_load to mid-rail).
+*    Lower limit: XM5 tail exits saturation (VDS5 < VDS5,sat)
+*    Upper limit: XM3/XM4 PMOS VGS collapses (net2 follows VCM, mirror fails)
+*    Detected by watching d(v(net1))/d(vcm) — net1 is the tail node;
+*    when the tail or input pair leaves saturation, net1 stops tracking VCM.
+*
+*  OCMR sweep: VCM fixed at 0.9V, VOUT forced by VVOUT swept 0→VDD.
+*    Lower limit: XM2 drain (=VOUT) hits XM2 source (net1) → XM2 triode
+*    Upper limit: XM4 drain (=VOUT) hits XM4 source (VDD) → XM4 triode
+*    Detected by watching @m.xdut.xm2[vds] and @m.xdut.xm4[vds].
+*
+*----------------------------------------------------------------
+* Include
+*----------------------------------------------------------------
+#ifdef Lay
+.include ../../../work/lpe/LELO_5TOTA_PMOS_lpe.spi
+#else
+.include ../../../work/xsch/LELO_5TOTA_PMOS.spice
+#endif
+
+*-----------------------------------------------------------------
+* OPTIONS
+*-----------------------------------------------------------------
+.option TNOM=27 GMIN=1e-15 reltol=1e-3 srcsteps=20
+.temp 27
+
+*-----------------------------------------------------------------
+* PARAMETERS
+*-----------------------------------------------------------------
+.param AVDD       = 1.8
+.param ibias_val  = 6.26u
+
+*-----------------------------------------------------------------
+* POWER
+*-----------------------------------------------------------------
+VSS    VSS    0      dc 0
+VDD    VDD    0      dc {AVDD}
+
+*-----------------------------------------------------------------
+* COMMON-MODE INPUT: VINP = VINN = VCM (tied, swept for ICMR)
+*   Both inputs driven by same voltage source VVCM.
+*   For the OCMR sweep, VVCM is altered to 0.9 V and VVOUT is swept.
+*-----------------------------------------------------------------
+VVCM   vcm_node  0   dc 0.9
+VVINP  VINP      vcm_node  dc 0
+VVINN  VINN      vcm_node  dc 0
+
+*-----------------------------------------------------------------
+* OUTPUT: forced to vcm_fixed (0.9 V) during ICMR sweep;
+*         swept 0→1.8 V during OCMR sweep via alter+dc.
+*-----------------------------------------------------------------
+.param vcm_fixed = 0.9
+VVOUT  VOUT   0    dc {vcm_fixed}
+
+*-----------------------------------------------------------------
+* BIAS
+*-----------------------------------------------------------------
+IIBIAS IBIAS VSS  dc {ibias_val}  $ PMOS diode: current drawn from IBIAS to VSS
+
+*-----------------------------------------------------------------
+* DUT
+*-----------------------------------------------------------------
+.include ../xdut.spi
+
+*-----------------------------------------------------------------
+* NODESET — guide DC solver to the valid common-mode operating
+*           point; prevents false convergence to rail clipping
+*-----------------------------------------------------------------
+.nodeset v(vout)       = 0.9
+.nodeset v(vinp)       = 0.9
+.nodeset v(vinn)       = 0.9
+.nodeset v(xdut.net1)  = 0.45
+.nodeset v(xdut.net2)  = 0.82
+.nodeset v(ibias)      = 0.55
+
+*-----------------------------------------------------------------
+* SAVE
+*-----------------------------------------------------------------
+.save all
+.save v(VOUT) v(VINP) v(VINN) v(xdut.net1) v(xdut.net2)
+.save @m.xdut.xm5.msky130_fd_pr__pfet_01v8[vds]
+.save @m.xdut.xm5.msky130_fd_pr__pfet_01v8[vdsat]
+.save @m.xdut.xm1.msky130_fd_pr__pfet_01v8[vds]
+.save @m.xdut.xm1.msky130_fd_pr__pfet_01v8[vdsat]
+.save @m.xdut.xm2.msky130_fd_pr__pfet_01v8[vds]
+.save @m.xdut.xm2.msky130_fd_pr__pfet_01v8[vdsat]
+.save @m.xdut.xm4.msky130_fd_pr__nfet_01v8[vds]
+.save @m.xdut.xm4.msky130_fd_pr__nfet_01v8[vdsat]
+
+*-----------------------------------------------------------------
+* NGSPICE CONTROL
+*-----------------------------------------------------------------
+.control
+set num_threads=8
+unset askquit
+set filetype=ascii
+
+*=================================================================
+* SWEEP 1 — ICMR
+*   Sweep VCM (VINP = VINN) from 0 to VDD.
+*   VOUT is held at vcm_fixed (0.9 V) by VVOUT so XM2/XM4 stay
+*   in a valid state throughout; only the input/tail path changes.
+*
+*   ICMR lower limit: XM5 tail needs VDS5 > VDS5,sat.
+*     As VCM falls, net1 falls, VDS5 = v(net1) - 0 shrinks.
+*     Limit ≈ VCM,min = VGS1 + VDS5,sat
+*   ICMR upper limit: as VCM rises, PMOS VGS (= VDD - VCM - VGS1)
+*     approaches zero and the mirror collapses.
+*     Limit ≈ VCM,max = VDD - |VGS3| + Vtn
+*
+*   Detection: XM5 enters triode when VDS5 < VGS5 - Vtn5.
+*     We watch @m.xdut.xm5[vds] directly — no Vth arithmetic.
+*     ICMR = VCM range where xm5_vds > xm5_vdsat  AND
+*                            xm1_vds > xm1_vdsat
+*     Simplified: watch @m.xdut.xm5[vds] and find where it drops
+*     below @m.xdut.xm5[vdsat] (ngspice: [vds] - [vdsat] > 0)
+*=================================================================
+dc VVCM 0 1.8 5m
+
+* Save ICMR sweep as its own file so OCMR write doesn't overwrite it
+write {cicname}_icmr.raw
+
+* Saturation margins: positive = saturated, zero = boundary
+let xm5_sat_margin = @m.xdut.xm5.msky130_fd_pr__pfet_01v8[vds] - @m.xdut.xm5.msky130_fd_pr__pfet_01v8[vdsat]
+let xm1_sat_margin = @m.xdut.xm1.msky130_fd_pr__pfet_01v8[vds] - @m.xdut.xm1.msky130_fd_pr__pfet_01v8[vdsat]
+
+* ICMR lower: XM5 first enters saturation as VCM rises from 0
+*   (xm5_sat_margin crosses 0 going positive = RISE)
+meas dc icmr_low   WHEN xm5_sat_margin = 0 RISE=1
+
+* ICMR upper: XM1 first exits saturation as VCM rises further
+*   (xm1_sat_margin crosses 0 going negative = FALL)
+meas dc icmr_high  WHEN xm1_sat_margin = 0 FALL=1
+
+let icmr_range = icmr_high - icmr_low
+
+* Print ICMR immediately — sweep 2 will overwrite the current plot
+echo ""
+echo "  -- Input Common-Mode Range (XM5/XM1 saturation boundary) --"
+echo ""
+echo "  ICMR lower bound  (V) :"
+print icmr_low
+echo "  ICMR upper bound  (V) :"
+print icmr_high
+echo "  ICMR range        (V) :"
+print icmr_range
+
+*=================================================================
+* SWEEP 2 — OCMR
+*   Fix VCM = 0.9 V (VVCM stays at 0.9 V from before).
+*   Now sweep VOUT via VVOUT from 0 to VDD.
+*   VINP = VINN = 0.9 V throughout.
+*
+*   OCMR lower: XM2 drain = VOUT approaches XM2 source = net1
+*     → XM2 enters triode when VDS2 < VDS2,sat
+*   OCMR upper: XM4 drain = VOUT approaches XM4 source = VDD
+*     → XM4 enters triode when |VDS4| < |VDS4,sat|
+*=================================================================
+alter VVCM dc = 0.9
+dc VVOUT 0 1.8 5m
+
+* Save OCMR sweep as {cicname}.raw — this is what dc.meas loads
+write {cicname}.raw
+
+* XM2: NMOS, VDS2 = v(vout) - v(xdut.net1), must be > vdsat2
+let xm2_sat_margin = @m.xdut.xm2.msky130_fd_pr__pfet_01v8[vds] - @m.xdut.xm2.msky130_fd_pr__pfet_01v8[vdsat]
+
+* XM4: PMOS, VDS4 is negative; |VDS4| > |VDS4,sat| ↔ VDS4 < VDS4,sat
+*   ngspice reports vds and vdsat for PMOS as negative numbers
+let xm4_sat_margin = @m.xdut.xm4.msky130_fd_pr__nfet_01v8[vds] - @m.xdut.xm4.msky130_fd_pr__nfet_01v8[vdsat]
+
+* OCMR lower: XM2 enters saturation as VOUT rises from 0 (RISE)
+meas dc ocmr_low   WHEN xm2_sat_margin = 0 RISE=1
+
+* OCMR upper: XM4 exits saturation as VOUT rises toward VDD (RISE for PMOS)
+meas dc ocmr_high  WHEN xm4_sat_margin = 0 FALL=1
+
+let ocmr_range = ocmr_high - ocmr_low
+
+*=================================================================
+* RESULTS — OCMR
+*=================================================================
+echo ""
+echo "================================================"
+echo "  5T OTA — DC ANALYSIS: ICMR / OCMR"
+echo "================================================"
+echo ""
+echo "  -- Output Swing Range (XM2/XM4 saturation boundary) --"
+echo ""
+echo "  OCMR lower bound  (V) :"
+print ocmr_low
+echo "  OCMR upper bound  (V) :"
+print ocmr_high
+echo "  OCMR range        (V) :"
+print ocmr_range
+echo ""
+echo "================================================"
+
+quit
+.endc
+
+.end
