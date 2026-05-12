@@ -1,0 +1,55 @@
+**.subckt LELO_FDA_MILLER VSS VDD VOUTP VOUTN IBIAS VINP VINN VCMREF
+.subckt LELO_FDA_MILLER VSS VDD VOUTP VOUTN IBIAS VINP VINN VCMREF
+* Two-stage FDA Miller + Choksi-Carley CMFB.  NMOS input pair.
+* Design rule: I_stage2 > I_stage1 for p2 = gm5/CL > GBW.
+*
+* Bias plan (100 uA into IBIAS):
+*   Stage-1 tail              :  50 uA  -> 25 uA / branch
+*   Stage-1 PMOS loads        :  25 uA each (matched ratio of MPB)
+*   Stage-2 PMOS CS           : 100 uA each (4x of M3 width)
+*   Stage-2 NMOS sinks        : 100 uA each (CMFB-set via vctrl)
+*   CMFB tails                :  50 uA each
+* Total ~ 100+50+50+200+100 = 0.5 mA -> 0.9 mW @1.8V (margin to 3 mW spec).
+
+* ---- Bias references ------------------------------------------------
+XMNB   IBIAS  IBIAS  VSS    VSS  sky130_fd_pr__nfet_01v8 L=1 W=10 nf=1 m=1
+XMPBN  pbias  IBIAS  VSS    VSS  sky130_fd_pr__nfet_01v8 L=1 W=2.5 nf=1 m=1
+XMPB   pbias  pbias  VDD    VDD  sky130_fd_pr__pfet_01v8 L=1 W=10 nf=1 m=1
+
+* ---- Stage-1 tail (150 uA) -------------------------------------------
+XMT    ntail  IBIAS  VSS    VSS  sky130_fd_pr__nfet_01v8 L=1 W=15 nf=3 m=1
+
+* ---- Stage-1 NMOS input pair (75 uA each) --------------------------
+XM1    voutp1 VINP   ntail  VSS  sky130_fd_pr__nfet_01v8 L=0.5 W=150 nf=10 m=1
+XM2    voutn1 VINN   ntail  VSS  sky130_fd_pr__nfet_01v8 L=0.5 W=150 nf=10 m=1
+
+* ---- Stage-1 PMOS loads --------------------------------------------
+XM3    voutp1 pbias  VDD    VDD  sky130_fd_pr__pfet_01v8 L=1 W=30 nf=3 m=1
+XM4    voutn1 pbias  VDD    VDD  sky130_fd_pr__pfet_01v8 L=1 W=30 nf=3 m=1
+
+* ---- Stage-2 PMOS CS at top (gate = voutp1 ~ 0.67V => |Vgs|~1.13V) ---
+XM5P   VOUTP  voutp1 VDD    VDD  sky130_fd_pr__pfet_01v8 L=0.5 W=80 nf=8 m=1
+XM5N   VOUTN  voutn1 VDD    VDD  sky130_fd_pr__pfet_01v8 L=0.5 W=80 nf=8 m=1
+
+* ---- Stage-2 NMOS sinks at bottom (gate = VCTRL from CMFB) ---------
+XM6P   VOUTP  vctrl  VSS    VSS  sky130_fd_pr__nfet_01v8 L=0.5 W=40 nf=4 m=1
+XM6N   VOUTN  vctrl  VSS    VSS  sky130_fd_pr__nfet_01v8 L=0.5 W=40 nf=4 m=1
+
+* ---- Miller compensation per side -----------------------------------
+* Rz > 1/gm5 (~700) for LHP zero. Cc set so GBW ~ 130 MHz.
+RZP    voutp1 nccp   2k
+CCP    nccp   VOUTP  1.8p
+RZN    voutn1 nccn   2k
+CCN    nccn   VOUTN  1.8p
+
+* ---- Choksi-Carley CMFB (50 uA tails) -------------------------------
+XQTP   stailp IBIAS  VSS    VSS  sky130_fd_pr__nfet_01v8 L=1 W=5 nf=1 m=1
+XQTN   stailn IBIAS  VSS    VSS  sky130_fd_pr__nfet_01v8 L=1 W=5 nf=1 m=1
+XQVOP  vd     VOUTP  stailp VSS  sky130_fd_pr__nfet_01v8 L=0.5 W=20 nf=1 m=1
+XQVCMP vctrl  VCMREF stailp VSS  sky130_fd_pr__nfet_01v8 L=0.5 W=20 nf=1 m=1
+XQVON  vd     VOUTN  stailn VSS  sky130_fd_pr__nfet_01v8 L=0.5 W=20 nf=1 m=1
+XQVCMN vctrl  VCMREF stailn VSS  sky130_fd_pr__nfet_01v8 L=0.5 W=20 nf=1 m=1
+XQDP   vd     vd     VDD    VDD  sky130_fd_pr__pfet_01v8 L=1 W=20 nf=1 m=1
+XQDN   vctrl  vd     VDD    VDD  sky130_fd_pr__pfet_01v8 L=1 W=20 nf=1 m=1
+CCMC   vctrl  VSS    1p
+.ends

@@ -1,0 +1,109 @@
+*TB LELO_FDA_MILLER — Closed-loop transient (1Meg||1p feedback per side, 2.5p load each)
+.include ../../../work/xsch/LELO_FDA_MILLER.spice
+.option TNOM=27 GMIN=1e-12 reltol=1e-3 srcsteps=20 itl1=500 itl6=300
+
+.param AVDD      = 1.8
+.param vcm       = 0.9
+.param ibias_val = 100u
+.param CL_val    = 2.5p
+.param Rfb       = 1Meg
+.param Cfb       = 1p
+
+VSS    VSS    0      dc 0
+VDD    VDD    0      dc {AVDD}
+VVCMREF VCMREF 0     dc {vcm}
+IIBIAS  VSS    IBIAS  dc {ibias_val}
+
+* FDA inverting config (gain = -Rfb/Rin = -1):
+* Same-side amp gain VINP->VOUTP is NON-inverting, so for negative FB we
+* must cross-couple: Rfb_P from VOUTP back to VINN, etc.
+RFBP    VOUTP  VINN   {Rfb}
+CFBP    VOUTP  VINN   {Cfb}
+RFBN    VOUTN  VINP   {Rfb}
+CFBN    VOUTN  VINP   {Cfb}
+
+* Differential PWL stim: small 10 mV diff step at 6 us, large 300 mV at 12 us
+VSP   VINP_DRV 0  PWL(0      {vcm}
++                     6u     {vcm}
++                     6.001u {vcm + 0.005}
++                     12u    {vcm + 0.005}
++                     12.001u {vcm + 0.150})
+VSN   VINN_DRV 0  PWL(0      {vcm}
++                     6u     {vcm}
++                     6.001u {vcm - 0.005}
++                     12u    {vcm - 0.005}
++                     12.001u {vcm - 0.150})
+
+* Inject stim through 1 Meg input resistor
+* VINP_DRV drives VINN (its inverting node for VOUTP); cross-coupled
+RINP  VINP_DRV VINN {Rfb}
+RINN  VINN_DRV VINP {Rfb}
+
+CLP   VOUTP   VSS   {CL_val}
+CLN   VOUTN   VSS   {CL_val}
+
+.include ../xdut.spi
+
+.nodeset v(ibias)        = 0.85
+.nodeset v(xdut.pbias)   = 0.64
+.nodeset v(xdut.ntail)   = 0.25
+.nodeset v(xdut.voutp1)  = 0.69
+.nodeset v(xdut.voutn1)  = 0.69
+.nodeset v(xdut.vctrl)   = 0.71
+.nodeset v(xdut.vd)      = 0.61
+.nodeset v(voutp)        = {vcm}
+.nodeset v(voutn)        = {vcm}
+.nodeset v(VINP)         = {vcm}
+.nodeset v(VINN)         = {vcm}
+.nodeset v(xdut.stailp)  = 0.20
+.nodeset v(xdut.stailn)  = 0.20
+
+.ic v(xdut.vctrl) = 0.71
+.ic v(xdut.pbias) = 0.64
+.ic v(xdut.ntail) = 0.25
+.ic v(voutp)      = {vcm}
+.ic v(voutn)      = {vcm}
+.ic v(VINP)       = {vcm}
+.ic v(VINN)       = {vcm}
+.ic v(xdut.voutp1)= 0.69
+.ic v(xdut.voutn1)= 0.69
+.ic v(xdut.vd)    = 0.61
+
+.save v(VOUTP) v(VOUTN) v(VINP) v(VINN)
+
+.control
+set num_threads=8
+unset askquit
+set filetype=ascii
+
+* Settle CMFB via long startup tran with .ic, then step
+tran 200p 16u
+
+let vod = v(VOUTP) - v(VOUTN)
+
+* Small step (6u..12u) settling
+meas tran vod_init_s AVG vod FROM=5.8u  TO=5.99u
+meas tran vod_fin_s  AVG vod FROM=11.8u TO=11.99u
+
+* Large step (12u..end) for slew
+meas tran vod_init_l AVG vod FROM=11.8u TO=11.99u
+meas tran vod_fin_l  AVG vod FROM=15.5u TO=15.99u
+let svd = abs(deriv(vod))
+meas tran sr_pos     MAX svd FROM=12u   TO=13u
+
+echo ""
+echo "===== SMALL-SIGNAL CLOSED-LOOP DIFF STEP (10 mV) ====="
+print vod_init_s vod_fin_s
+meas tran vp_fin AVG v(VOUTP) FROM=11.8u TO=11.99u
+meas tran vn_fin AVG v(VOUTN) FROM=11.8u TO=11.99u
+meas tran vinp_fin AVG v(VINP) FROM=11.8u TO=11.99u
+meas tran vinn_fin AVG v(VINN) FROM=11.8u TO=11.99u
+print vp_fin vn_fin vinp_fin vinn_fin
+echo ""
+echo "===== LARGE-SIGNAL DIFF SLEW (300 mV step) ====="
+print vod_init_l vod_fin_l sr_pos sr_pos_v_per_us
+
+write {cicname}.raw
+quit
+.endc
+.end

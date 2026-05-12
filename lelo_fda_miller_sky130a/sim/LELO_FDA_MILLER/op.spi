@@ -1,0 +1,78 @@
+*TB LELO_FDA_MILLER — OP and bias check (CMFB closed via internal sense)
+.include ../../../work/xsch/LELO_FDA_MILLER.spice
+.option TNOM=27 GMIN=1e-12 reltol=1e-3 srcsteps=20 itl1=500 itl6=300 abstol=1e-12
+
+.param vcm = 'vdda/2'
+.param ibias_val = 100u
+.param CL_val    = 2.5p
+.param vos       = 0.9
+
+VSS    VSS    0      dc 0
+VDD    VDD    0      dc {vdda}
+VVCMREF VCMREF 0     dc {vcm}
+VVINP  VINP   0      dc {vos}
+VVINN  VINN   0      dc {vcm}
+IIBIAS VSS    IBIAS  dc {ibias_val}
+CLP    VOUTP  VSS    {CL_val}
+CLN    VOUTN  VSS    {CL_val}
+.include ../xdut.spi
+
+.nodeset v(ibias)        = 0.85
+.nodeset v(xdut.pbias)   = 0.64
+.nodeset v(xdut.ntail)   = 0.25
+.nodeset v(xdut.voutp1)  = 0.69
+.nodeset v(xdut.voutn1)  = 0.69
+.nodeset v(xdut.vctrl)   = 0.71
+.nodeset v(xdut.vd)      = 0.61
+.nodeset v(voutp)        = {vcm}
+.nodeset v(voutn)        = {vcm}
+.nodeset v(xdut.stailp)  = 0.20
+.nodeset v(xdut.stailn)  = 0.20
+.nodeset v(xdut.nccp)    = {vcm}
+.nodeset v(xdut.nccn)    = {vcm}
+
+.ic v(xdut.vctrl) = 0.71
+.ic v(xdut.pbias) = 0.64
+.ic v(xdut.ntail) = 0.25
+.ic v(voutp)      = {vcm}
+.ic v(voutn)      = {vcm}
+.ic v(xdut.voutp1)= 0.69
+.ic v(xdut.voutn1)= 0.69
+.ic v(xdut.vd)    = 0.61
+
+.save all
+
+.control
+set num_threads=8
+unset askquit
+set filetype=ascii
+* Use a startup transient (UIC) to settle the CMFB loop, then take OP from
+* the final state -- direct OP convergence keeps finding a non-physical root.
+tran 10n 200u uic
+op
+echo ""
+echo "===== Bias points ====="
+print v(voutp) v(voutn) v(xdut.voutp1) v(xdut.voutn1) v(xdut.pbias) v(xdut.vctrl) v(xdut.vd) v(xdut.ntail) v(ibias)
+
+let id_m1     = @m.xdut.xm1.msky130_fd_pr__nfet_01v8[id]
+let id_m5p    = -@m.xdut.xm5p.msky130_fd_pr__pfet_01v8[id]
+let id_m6p    = @m.xdut.xm6p.msky130_fd_pr__nfet_01v8[id]
+let gm1       = @m.xdut.xm1.msky130_fd_pr__nfet_01v8[gm]
+let gm5p      = @m.xdut.xm5p.msky130_fd_pr__pfet_01v8[gm]
+let gds_o1    = @m.xdut.xm1.msky130_fd_pr__nfet_01v8[gds] + @m.xdut.xm3.msky130_fd_pr__pfet_01v8[gds]
+let gds_o2    = @m.xdut.xm5p.msky130_fd_pr__pfet_01v8[gds] + @m.xdut.xm6p.msky130_fd_pr__nfet_01v8[gds]
+let A1        = gm1/gds_o1
+let A2        = gm5p/gds_o2
+let A_tot_db  = 20*log10(A1*A2)
+
+echo ""
+echo "===== Currents (uA) ====="
+print id_m1 id_m5p id_m6p
+echo ""
+echo "===== gm / gds / gain ====="
+print gm1 gm5p gds_o1 gds_o2 A1 A2 A_tot_db
+
+write {cicname}.raw
+quit
+.endc
+.end
