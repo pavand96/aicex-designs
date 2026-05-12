@@ -1,77 +1,117 @@
 .subckt LELO_FDA_MILLER VSS VDD VOUTP VOUTN IBIAS VINP VINN VCMREF
 * ====================================================================
-* Folded-Cascode FDA + Choksi-Carley CMFB.   SKY130A.
+* Folded-Cascode FDA + Choksi-Carley CMFB.   SKY130A.  Iter 2.
 *
-* Topology (simplified, robust biasing):
-*   NMOS pair (input)  -> sources current at folding nodes nfp,nfn
-*   PMOS current sources (gate=pbias) push 2x tail current into folding
-*       nodes -> excess folds DOWN through NMOS cascode
-*   NMOS cascode (gate=ncas) summing currents at VOUT
-*   NMOS sinks (gate=vctrl from CMFB) set V_OCM
-*   PMOS cascode (gate=pcas) at top for high Rout
+* Bias gen: Sooch wide-swing cascode bias.  Two 50uA branches mirrored
+*   from IBIAS produce pcas (PMOS aux at top) and ncas (NMOS aux at
+*   bottom).  Cascode bias devices are sized so that V_cas = Vt + 2*Vov,
+*   keeping the source-side current devices at the edge of saturation
+*   and maximizing output swing.
 *
-* Bias plan (IBIAS = 100uA into chip via VSS):
-*   M_NB       : NMOS diode               -> 100u
-*   M_PB chain : NMOS mirror -> PMOS diode pbias  -> 100u
-*   Cascode biases pcas, ncas: simple resistor-set
-*
-* All PFETs use _lvt to avoid Vt headroom collapse across PVT.
+* Currents:
+*   IBIAS    : 100u (ref)
+*   I_TAIL   : 200u  (M_T, 2x mirror)
+*   I_M1=M2  : 100u each
+*   I_M3=M4  : 200u each (PMOS source, 2x folds 100u down each side)
+*   I_M5=M6  : 100u (PMOS cascode, fold path)
+*   I_M7=M8  : 100u (NMOS cascode at output)
+*   I_M9=M10 : 100u (CMFB sink, set by vctrl)
+*   I_pbias  : 100u (diode branch)
+*   I_PCAS   : 50u  (Sooch aux for pcas)
+*   I_NCAS   : 50u  (Sooch aux for ncas)
+*   I_CMFB   : 100u tail per side (200u total)
+*  Total ~1.5 mA -> 2.7 mW @ 1.8V
 * ====================================================================
 
-* ---- Bias references -----------------------------------------------
-* NMOS diode at IBIAS (1x = 100uA reference)
+* ---- IBIAS reference -----------------------------------------------
 XMNB    IBIAS  IBIAS  VSS    VSS  sky130_fd_pr__nfet_01v8 L=1 W=4 nf=1 m=1
-* PMOS pbias diode generator: NMOS sinks IBIAS-mirrored current through PMOS diode
+
+* ---- pbias generation: NMOS pulls 100u through PMOS diode ----------
 XMPBN   pbias  IBIAS  VSS    VSS  sky130_fd_pr__nfet_01v8 L=1 W=4 nf=1 m=1
-XMPBD   pbias  pbias  VDD    VDD  sky130_fd_pr__pfet_01v8_lvt L=1 W=20 nf=2 m=1
+XMPBD   pbias  pbias  VDD    VDD  sky130_fd_pr__pfet_01v8_lvt L=2 W=40 nf=4 m=1
 
-* ---- Cascode biases via diode-connected devices through bleed R ----
-* ---- Cascode biases via dedicated current branches -----------------
-* Branch P: 5uA branch via L=4 NMOS sink (W/L=0.105 = 5uA from IBIAS).
-* At 5uA, each PMOS Vgs ~ 0.62V -> pcas at ~0.55V.
-XMPC_S1  pmid1 pmid1  VDD    VDD  sky130_fd_pr__pfet_01v8_lvt L=1 W=10 nf=1 m=1
-XMPC_DIO pcas  pcas   pmid1  VDD  sky130_fd_pr__pfet_01v8_lvt L=1 W=10 nf=1 m=1
-XMBR_P   pcas  IBIAS  VSS    VSS  sky130_fd_pr__nfet_01v8 L=4 W=0.42 nf=1 m=1
-* Branch N: PMOS source via pbias -> NMOS diode (ncas) -> VSS
-XMSR_N   ncas  pbias  VDD    VDD  sky130_fd_pr__pfet_01v8_lvt L=1 W=10 nf=1 m=1
-XMNC_DIO ncas  ncas   VSS    VSS  sky130_fd_pr__nfet_01v8 L=0.5 W=4 nf=1 m=1
+* ---- Sooch wide-swing cascode bias: pcas branch (50uA) -------------
+* Source 50uA from VDD via PMOS mirror, sink into PMOS aux diode (drain=
+* gate=pcas, source=VDD).  Aux W/L = (W/L_M5)/4 at half current scales
+* Vov so Vsg_aux = |Vt| + 2|Vov_M5|. Then pcas = VDD - Vsg_aux.
+*
+* Sink for the 50uA: NMOS gate=IBIAS sized 1/2 of MNB.
+XMPC_AUX pcas   pcas   VDD    VDD  sky130_fd_pr__pfet_01v8_lvt L=1 W=10 nf=1 m=1
+XMPC_SNK pcas   IBIAS  VSS    VSS  sky130_fd_pr__nfet_01v8 L=2 W=4 nf=1 m=1
 
-* ---- NMOS pair tail (200uA: 2x mirror of MNB) ----------------------
+* ---- Sooch wide-swing cascode bias: ncas branch (50uA) -------------
+* Source 50uA from pbias mirror, sink into NMOS aux diode (drain=gate=
+* ncas, source=VSS).  Aux W/L = (W/L_M7)/8 at 50u scales Vov so
+* Vgs_aux = Vt + 2*Vov_M7.
+XMNC_SRC ncas   pbias  VDD    VDD  sky130_fd_pr__pfet_01v8_lvt L=1 W=10 nf=1 m=1
+XMNC_AUX ncas   ncas   VSS    VSS  sky130_fd_pr__nfet_01v8 L=2 W=15 nf=1 m=1
+
+* ---- NMOS pair tail (200u: 2x mirror of MNB) -----------------------
 XMT    ntail  IBIAS  VSS    VSS  sky130_fd_pr__nfet_01v8 L=1 W=8 nf=2 m=1
 
-* ---- NMOS input pair (100 uA each) ---------------------------------
-XM1    nfp    VINP   ntail  VSS  sky130_fd_pr__nfet_01v8 L=0.5 W=100 nf=10 m=1
-XM2    nfn    VINN   ntail  VSS  sky130_fd_pr__nfet_01v8 L=0.5 W=100 nf=10 m=1
+* ---- NMOS input pair (100u each) -----------------------------------
+XM1    nfp    VINP   ntail  VSS  sky130_fd_pr__nfet_01v8 L=0.5 W=80 nf=8 m=1
+XM2    nfn    VINN   ntail  VSS  sky130_fd_pr__nfet_01v8 L=0.5 W=80 nf=8 m=1
 
-* ---- PMOS current sources at folding nodes (200 uA each: 2x mirror) -
-* M3/M4 are large enough to supply 2x input-pair current; excess folds.
-XM3    nfp    pbias  VDD    VDD  sky130_fd_pr__pfet_01v8_lvt L=2 W=160 nf=16 m=1
-XM4    nfn    pbias  VDD    VDD  sky130_fd_pr__pfet_01v8_lvt L=2 W=160 nf=16 m=1
+* ---- PMOS source (200u each: 2x mirror; M3 L matches pbias diode L) -
+XM3    nfp    pbias  VDD    VDD  sky130_fd_pr__pfet_01v8_lvt L=2 W=80 nf=8 m=1
+XM4    nfn    pbias  VDD    VDD  sky130_fd_pr__pfet_01v8_lvt L=2 W=80 nf=8 m=1
 
-* ---- PMOS cascode (gate=pcas) folding node -> VOUT -----------------
+* ---- PMOS cascode (100u) -------------------------------------------
 XM5    VOUTP  pcas   nfp    VDD  sky130_fd_pr__pfet_01v8_lvt L=1 W=80 nf=8 m=1
 XM6    VOUTN  pcas   nfn    VDD  sky130_fd_pr__pfet_01v8_lvt L=1 W=80 nf=8 m=1
 
-* ---- NMOS cascode (gate=ncas) VOUT -> internal node ----------------
-XM7    VOUTP  ncas   nlowp  VSS  sky130_fd_pr__nfet_01v8 L=2 W=120 nf=12 m=1
-XM8    VOUTN  ncas   nlown  VSS  sky130_fd_pr__nfet_01v8 L=2 W=120 nf=12 m=1
+* ---- NMOS cascode (100u) -------------------------------------------
+XM7    VOUTP  ncas   nlowp  VSS  sky130_fd_pr__nfet_01v8 L=1 W=60 nf=6 m=1
+XM8    VOUTN  ncas   nlown  VSS  sky130_fd_pr__nfet_01v8 L=1 W=60 nf=6 m=1
 
-* ---- NMOS sinks driven by CMFB vctrl (~100uA each = M1 - 0 folded) -
+* ---- CMFB sink ----------------------------------------------------
 XM9    nlowp  vctrl  VSS    VSS  sky130_fd_pr__nfet_01v8 L=2 W=80 nf=8 m=1
 XM10   nlown  vctrl  VSS    VSS  sky130_fd_pr__nfet_01v8 L=2 W=80 nf=8 m=1
 
-* ---- Choksi-Carley CMFB --------------------------------------------
-XQTP   stailp IBIAS  VSS    VSS  sky130_fd_pr__nfet_01v8 L=1 W=10 nf=1 m=1
-XQTN   stailn IBIAS  VSS    VSS  sky130_fd_pr__nfet_01v8 L=1 W=10 nf=1 m=1
-XQVOP  vd     VOUTP  stailp VSS  sky130_fd_pr__nfet_01v8 L=0.5 W=30 nf=1 m=1
-XQVCMP vctrl  VCMREF stailp VSS  sky130_fd_pr__nfet_01v8 L=0.5 W=30 nf=1 m=1
-XQVON  vd     VOUTN  stailn VSS  sky130_fd_pr__nfet_01v8 L=0.5 W=30 nf=1 m=1
-XQVCMN vctrl  VCMREF stailn VSS  sky130_fd_pr__nfet_01v8 L=0.5 W=30 nf=1 m=1
-XQDP   vd     vd     VDD    VDD  sky130_fd_pr__pfet_01v8_lvt L=1 W=30 nf=1 m=1
-XQDN   vctrl  vd     VDD    VDD  sky130_fd_pr__pfet_01v8_lvt L=1 W=30 nf=1 m=1
+* ---- Choksi-Carley CMFB (NMOS-input, matches input pair) ----------
+* 5T-OTA topology: NMOS pair sits on NMOS tail (to VSS), PMOS load
+* mirror at top.  Two pairs, one for each output, share the load:
+*
+*  VDD
+*   |
+*   +-- QDP(diode) ---+--- vd
+*   |                 |
+*   +-- QDN(mirror)  -+--- vctrl  (CMFB output -> M9/M10 gates)
+*                     |
+*  vd -- drain QVOP  vctrl -- drain QVCMP    (P-side pair)
+*        gate VOUTP         gate VCMREF
+*        +---- stailp -----+
+*                |
+*               QTNP (NMOS tail, gate=IBIAS, ~25u)
+*                |
+*               VSS
+*  vd -- drain QVON  vctrl -- drain QVCMN    (N-side pair)
+*        gate VOUTN         gate VCMREF
+*        +---- stailn -----+
+*                |
+*               QTNN (NMOS tail, gate=IBIAS, ~25u)
+*                |
+*               VSS
+*
+* Polarity:  V_OCM up -> I_QVOP+I_QVON up -> diode current up ->
+*   mirror current up -> vctrl pulled UP (mirror sources more, NMOS
+*   sinks fixed VCMREF current) -> M9 sinks more -> V_OCM down.
+*   NEGATIVE FB. CORRECT.
+* P-side
+XQTNP  stailp IBIAS  VSS    VSS  sky130_fd_pr__nfet_01v8 L=1 W=8 nf=2 m=1
+XQVOP  vd     VOUTP  stailp VSS  sky130_fd_pr__nfet_01v8 L=0.5 W=40 nf=2 m=1
+XQVCMP vctrl  VCMREF stailp VSS  sky130_fd_pr__nfet_01v8 L=0.5 W=40 nf=2 m=1
+* N-side
+XQTNN  stailn IBIAS  VSS    VSS  sky130_fd_pr__nfet_01v8 L=1 W=8 nf=2 m=1
+XQVON  vd     VOUTN  stailn VSS  sky130_fd_pr__nfet_01v8 L=0.5 W=40 nf=2 m=1
+XQVCMN vctrl  VCMREF stailn VSS  sky130_fd_pr__nfet_01v8 L=0.5 W=40 nf=2 m=1
+* PMOS load mirror (shared)
+XQDP   vd     vd     VDD    VDD  sky130_fd_pr__pfet_01v8_lvt L=1 W=20 nf=2 m=1
+XQDN   vctrl  vd     VDD    VDD  sky130_fd_pr__pfet_01v8_lvt L=1 W=20 nf=2 m=1
 CCMC   vctrl  VSS    2p
 
-* ---- Startup leak at folding nodes (helps OP) ----------------------
+* ---- Startup leak at folding nodes ---------------------------------
 RSTUFP nfp   VSS   20Meg
 RSTUFN nfn   VSS   20Meg
 

@@ -4,53 +4,85 @@ Folded-cascode FDA + Choksi-Carley CMFB, SKY130A.
 
 ## Status: WORK IN PROGRESS
 
-A first iteration of a folded-cascode topology is in place. The circuit
-biases up cleanly and small-signal-AC simulates at the typical corner,
-but the gain target and corner robustness are not yet met. See
-`sim/LELO_FDA_MILLER/corner_summary.csv` for the corner sweep.
+A folded-cascode FDA with a Sooch wide-swing cascode bias generator
+and a Choksi-Carley NMOS-input CMFB is in place. The typical corner
+hits ~47 dB / 60 MHz / 81° PM, but the CMFB latches at the slow-hot
+corners and one or two extreme corners.
 
 ## Typical-corner results
 
 | metric  | value     |
 |---------|-----------|
 | V_OCM   | 0.90 V    |
-| Gain    | ~43 dB    |
-| GBW     | ~80 MHz   |
-| PM      | ~81°      |
-| Power   | ~3 mW @ 1.8 V |
+| Gain    | 47 dB     |
+| GBW     | 61 MHz    |
+| PM      | 81°       |
 
 ## Corner sweep summary
 
-Only 4 of 9 corners produce sensible AC results today:
+3 corners pass cleanly (typ, sf_tt_vt, fs_tt_vt). 2 corners
+(ff_tl_vl, ff_tl_vh) get the bias right but fall short on gain.
+4 corners fail because the CMFB latches the output at one of two
+self-consistent equilibria (V_OCM ~ 0.1 V or ~ 1.08 V).
 
 | corner   | gain (dB) | GBW    | V_OCM | note          |
 |----------|-----------|--------|-------|---------------|
-| typ      | 43        | 80M    | 0.90  | OK            |
-| ff_tl_vl | 38        | 35M    | 0.67  | OK            |
-| ff_tl_vh | 53        | 37M    | 1.72  | V_OCM high    |
-| fs_tt_vt | 37        | 65M    | 0.66  | OK            |
-| ss_tl_vl | -82       | -      | 0.42  | DEAD          |
-| ss_th_vl | 4         | 13M    | 0.22  | broken        |
-| ss_th_vh | 4         | 14M    | 1.09  | broken        |
-| ff_th_vh | 3         | 11M    | 1.09  | broken        |
-| sf_tt_vt | -180      | -      | 0.89  | DEAD          |
+| typ      | 47        | 61M    | 0.90  | OK            |
+| sf_tt_vt | 62        | 81M    | 0.87  | OK            |
+| fs_tt_vt | 59        | 56M    | 0.82  | OK            |
+| ff_tl_vl | 34        | 20M    | 0.77  | low gain      |
+| ff_tl_vh | 31        |  9M    | 0.85  | low gain      |
+| ss_tl_vl | DEAD      | -      | 0.83  | input pair off |
+| ss_th_vl |  2        | 12M    | 0.11  | CMFB latched low |
+| ss_th_vh |  2        | 12M    | 1.08  | CMFB latched high |
+| ff_th_vh |  2        | 12M    | 1.08  | CMFB latched high |
 
 ## Known issues / next steps
 
-1. **Cascode bias drift across PVT** — the simple stacked-PMOS bias
-   generator for `pcas` (and the pbias-sourced `ncas`) does not track
-   PVT well. At slow corners or low VDD the cascode gates collapse and
-   the high-impedance node loses its operating point. Replace with a
-   wide-swing Sooch cascode bias generator.
+1. **CMFB dual equilibrium / startup latch** — the cascode column
+   has two DC solutions: nominal (all devices saturated) and a
+   degenerate one with M5/M7 in triode and V_OCM at one of the rails.
+   At slow-hot corners the OP solver lands on the degenerate one and
+   the CMFB cannot pull out (its loop gain is small in that regime).
+   A startup circuit, or a CMFB driving the PMOS source mirror
+   (instead of the NMOS sink), is needed to guarantee the nominal
+   equilibrium.
 
-2. **CMFB strength** — at ss corners V_OCM drifts >100 mV. The CMFB
-   tail/gm ratio needs to be increased (or the output sinks made
-   weaker so vctrl has more authority).
+2. **Slow-corner input pair off** — at ss_tl_vl the NMOS tail bias
+   (mirrored from a 25 uA reference) drops too far. Either widen
+   the mirror or use a constant-gm bias generator.
 
-3. **Output Rds** — typical-corner gain at 43 dB is below the 60 dB
-   target. Both rds_M3 (PMOS source) and rds_M9 (NMOS CMFB sink) are
-   the limiters. Either bump L further or add a second cascode layer
-   on the NMOS side.
+3. **Headroom at fast corners** — at ff_tl_vh and ff_th_vh the
+   PMOS source over-delivers and the CMFB saturates trying to
+   compensate. Adding a second NMOS cascode layer would give the
+   sink more authority.
+
+## Topology choices (and why)
+
+* NMOS input pair (more gm/I, lower 1/f below the chopper, easier
+  cascode stack at VDD = 1.8 V).
+* PMOS source loads on top, NMOS folded cascode at the output.
+* PMOS LVT flavor everywhere PMOS is used, to recover Vt headroom.
+* Sooch wide-swing cascode bias generator: the auxiliary device runs
+  at half current with quarter (W/L), so its Vov is 2x the main
+  device's, putting V_cas at Vt + 2*Vov — the cascoded transistor sits
+  exactly at the edge of saturation, with no wasted headroom.
+* CMFB is also NMOS-input (matches the input pair). The 5T-OTA
+  structure has the NMOS pair source on a NMOS tail to VSS and a
+  PMOS current-mirror load at VDD; the mirror output drives the
+  M9/M10 sink gates.
+
+## Polarity derivation (CMFB)
+
+The CMFB diff pair has VOUTP/VOUTN on the diode side of the PMOS load
+and VCMREF on the mirror side, so:
+
+```
+V_OCM up -> I_QVOP+I_QVON up -> diode current up -> mirror current up
+         -> vctrl rises -> M9/M10 sink more -> V_OCM falls.
+```
+
+Negative feedback. Verified at typ.
 
 ## Files
 

@@ -48,6 +48,8 @@ CLN    VOUTN  VSS    {CL_val}
 .ic v(voutp)      = {vcm}
 .ic v(voutn)      = {vcm}
 .ic v(xdut.vd)    = 1.05
+.ic v(xdut.stailp) = 0.25
+.ic v(xdut.stailn) = 0.25
 
 .save all
 
@@ -62,6 +64,7 @@ echo ""
 echo "===== Bias points ====="
 print v(voutp) v(voutn) v(xdut.nfp) v(xdut.nfn) v(xdut.nlowp) v(xdut.nlown)
 print v(xdut.pbias) v(xdut.pcas) v(xdut.ncas) v(xdut.ntail) v(xdut.vctrl) v(xdut.vd) v(ibias)
+print v(xdut.stailp) v(xdut.stailn)
 
 * Currents (referenced from device terminal currents)
 let id_m1   =  @m.xdut.xm1.msky130_fd_pr__nfet_01v8[id]
