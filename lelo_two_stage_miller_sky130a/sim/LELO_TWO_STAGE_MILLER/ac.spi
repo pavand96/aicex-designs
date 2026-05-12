@@ -1,20 +1,17 @@
-*TB LELO_TWO_STAGE_MILLER — Open-loop AC (Vos-corrected DC, AC on VINP)
+*TB LELO_TWO_STAGE_MILLER — Open-loop AC (vos passed in by orchestrator)
 .include ../../../work/xsch/LELO_TWO_STAGE_MILLER.spice
 .option TNOM=27 GMIN=1e-12 reltol=1e-3 srcsteps=10 itl1=300 itl6=200
 
-.param AVDD      = 1.8
-.param vcm       = 0.9
-.param vos       = 0.89979
+.param vcm = 'vdda/2'
 .param ibias_val = 10u
-.param CL_val    = 1p
+.param CL_val = 1p
+.param vos = {VOS}
 
 VSS    VSS    0      dc 0
-VDD    VDD    0      dc {AVDD}
+VDD    VDD    0      dc {vdda}
 IIBIAS VSS    IBIAS  dc {ibias_val}
-
 VVINP  VINP   0      dc {vos} ac 1
 VVINN  VINN   0      dc {vcm}
-
 CL     VOUT   VSS    {CL_val}
 
 .include ../xdut.spi
@@ -23,8 +20,8 @@ CL     VOUT   VSS    {CL_val}
 .nodeset v(xdut.ntail)   = 0.20
 .nodeset v(xdut.n1)      = 1.10
 .nodeset v(xdut.vout1)   = 0.55
-.nodeset v(xdut.ncc)     = 0.90
-.nodeset v(vout)         = 0.90
+.nodeset v(xdut.ncc)     = {vcm}
+.nodeset v(vout)         = {vcm}
 
 .save all
 
@@ -43,8 +40,6 @@ let f3db_target = dc_gain_db - 3
 meas ac f3db       WHEN mag_db = f3db_target
 meas ac fgbw       WHEN mag_db = 0
 meas ac phase_ugf  FIND ph_deg WHEN mag_db = 0
-* PM for inverting open-loop transfer (phase starts at 180°, rolls down).
-* Phase margin = phase_at_UGF (when measured in 0..180° range).
 let pm = phase_ugf
 
 echo ""
@@ -54,13 +49,6 @@ print f3db
 print fgbw
 print phase_ugf
 print pm
-echo ""
-echo "=== Phase trace (deg) at decades ==="
-meas ac ph_10    find ph_deg at=10
-meas ac ph_1k    find ph_deg at=1k
-meas ac ph_100k  find ph_deg at=100k
-meas ac ph_10meg find ph_deg at=10meg
-meas ac ph_100meg find ph_deg at=100meg
 
 write {cicname}.raw
 quit

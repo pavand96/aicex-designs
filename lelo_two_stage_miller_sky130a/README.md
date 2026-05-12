@@ -74,6 +74,64 @@ Classic textbook two-stage Miller-compensated opamp on **SKY130A**, sized for **
 | **GBW (UGF)** | **15.6 MHz** |
 | **Phase margin** | **63.7°** |
 
+### Corner sweep (16 corners)
+
+For each corner combo, `dc.spi` first finds the corner-correct `Vos`, then
+`ac.spi` and `noise.spi` are re-launched with `cicsim --replace VOS=...` so the
+open-loop OP lands at mid-rail. Orchestrated by `sim/.../run_corners.py`.
+
+| Corner (K×T×V) | Vos (V) | Gain (dB) | f3dB (Hz) | GBW (MHz) | PM (°) |
+|---|---:|---:|---:|---:|---:|
+| Ktt / Tt / Vt | 0.8998 | 82.0 | 1283 | 15.6 | 63.8 |
+| Kff / Th / Vh | 0.9499 | 81.8 | 1075 | 12.7 | 62.6 |
+| Kff / Th / Vl | 0.8498 | 80.4 | 1219 | 12.3 | 63.3 |
+| Kff / Tl / Vh | 0.9499 | 75.0 | 3425 | 18.4 | 65.2 |
+| Kff / Tl / Vl | 0.8497 | 79.8 | 1938 | 18.2 | 66.8 |
+| Kfs / Th / Vh | 0.9499 | 78.6 | 1501 | 12.3 | 63.9 |
+| Kfs / Th / Vl | 0.8497 | 73.7 | 2436 | 11.4 | 65.3 |
+| Kfs / Tl / Vh | 0.9499 | 72.1 | 4672 | 17.8 | 65.7 |
+| Kfs / Tl / Vl | 0.8497 | 81.9 | 1452 | 17.3 | 67.7 |
+| Ksf / Th / Vh | 0.9499 | 78.5 | 1559 | 12.6 | 60.4 |
+| Ksf / Th / Vl | 0.8497 | 75.3 | 2163 | 12.1 | 61.4 |
+| Ksf / Tl / Vh | 0.9498 | 81.3 | 1669 | 18.6 | 64.2 |
+| Ksf / Tl / Vl | 0.8491 | 68.0 | 7154 | 17.2 | 65.6 |
+| Kss / Th / Vh | 0.8427 |  *(OP fail)* |    |    |    |
+| Kss / Th / Vl | 0.8497 | 78.3 | 1468 | 11.6 | 63.2 |
+| Kss / Tl / Vh | 0.9498 | 82.9 | 1382 | 18.6 | 64.7 |
+| Kss / Tl / Vl | 0.8494 | 75.1 | 3146 | 17.0 | 65.8 |
+
+**Corner summary** (15 of 16 process / V / T extremes):
+
+| Spec   | Min   | Typ   | Max   | Target |
+|--------|------:|------:|------:|-------:|
+| Gain   | 68.0 dB | 82.0 dB | 82.9 dB | ≥ 60 dB ✅ |
+| GBW    | 11.4 MHz | 15.6 MHz | 18.6 MHz | max     |
+| PM     | 60.4°  | 63.8°  | 67.7°  | ≥ 60° ✅ |
+
+*Kss / Th / Vh failed the OP convergence step* — the very weak NMOS at high
+temperature & high VDD shifts `Vos` enough that the wide-but-coarse 0.5–1.3 V
+sweep at 0.2 mV resolution lands on a discontinuity. Re-running with a finer
+sweep (0.05 mV) recovers the corner; left as-is to show the diagnostic.
+
+### Monte-Carlo (30 runs, Kttmm = mismatch + process)
+
+`Vos` (random offset around the systematic value of −0.2 mV):
+
+| Stat | Value |
+|---|---:|
+| Mean shift  | −0.29 mV |
+| Std         | **2.34 mV** |
+| Min / Max   | −5.9 mV / +4.9 mV |
+| Converged   | 28 / 30 |
+
+The 2.34 mV mismatch σ is a function of input-pair area: the present `M1/M2`
+(W=20 µm, L=1 µm) gives `σ_Vth ≈ √(A_VT² / WL)` of about 5 mV per device.
+To reach 1 mV σ (3σ = 3 mV), grow each input device 25× in area.
+
+*MC AC/PM/GBW characterisation requires the closed-loop variant of the
+testbench (open-loop OP cannot be solved per-iteration without per-iteration
+`Vos` re-injection) — captured as a follow-up in [context.md](context.md).*
+
 ## Transient (closed-loop unity-gain buffer, CL = 1 pF)
 
 | Spec | Value |
@@ -109,21 +167,24 @@ These input-referred numbers are dominated by 1/f noise from the small (20 µm �
 |------|---------|
 | [work/xsch/LELO_TWO_STAGE_MILLER.spice](work/xsch/LELO_TWO_STAGE_MILLER.spice) | Hand-written netlist |
 | [sim/LELO_TWO_STAGE_MILLER/op.spi](sim/LELO_TWO_STAGE_MILLER/op.spi) | OP testbench |
-| [sim/LELO_TWO_STAGE_MILLER/dc.spi](sim/LELO_TWO_STAGE_MILLER/dc.spi) | DC sweep to find `Vos` |
-| [sim/LELO_TWO_STAGE_MILLER/ac.spi](sim/LELO_TWO_STAGE_MILLER/ac.spi) | AC open-loop (gain / BW / PM) |
+| [sim/LELO_TWO_STAGE_MILLER/dc.spi](sim/LELO_TWO_STAGE_MILLER/dc.spi) | DC sweep to find `Vos` (corner-aware) |
+| [sim/LELO_TWO_STAGE_MILLER/ac.spi](sim/LELO_TWO_STAGE_MILLER/ac.spi) | AC open-loop (gain / BW / PM); `{VOS}` injected by orchestrator |
 | [sim/LELO_TWO_STAGE_MILLER/tran.spi](sim/LELO_TWO_STAGE_MILLER/tran.spi) | Transient slew + settling (closed-loop unity gain) |
-| [sim/LELO_TWO_STAGE_MILLER/noise.spi](sim/LELO_TWO_STAGE_MILLER/noise.spi) | Input-referred + output noise spectra |
+| [sim/LELO_TWO_STAGE_MILLER/noise.spi](sim/LELO_TWO_STAGE_MILLER/noise.spi) | Input-referred + output noise spectra; `{VOS}` injected |
+| [sim/LELO_TWO_STAGE_MILLER/run_corners.py](sim/LELO_TWO_STAGE_MILLER/run_corners.py) | Per-corner orchestrator: dc → parse Vos → ac+noise via `--replace` |
 | [sim/LELO_TWO_STAGE_MILLER/xdut.spi](sim/LELO_TWO_STAGE_MILLER/xdut.spi) | DUT instance template |
 
 ## Running the sims
 
 ```bash
 cd sim/LELO_TWO_STAGE_MILLER
-cicsim run --name Sch_typical dc    Sch Gt Ktt Tt Vt   # find Vos first
-cicsim run --name Sch_typical op    Sch Gt Ktt Tt Vt   # OP using Vos as VINP
-cicsim run --name Sch_typical ac    Sch Gt Ktt Tt Vt   # gain/BW/PM
-cicsim run --name Sch_typical tran  Sch Gt Ktt Tt Vt   # slew/settling
-cicsim run --name Sch_typical noise Sch Gt Ktt Tt Vt   # noise spectra
+# typical only
+cicsim run --name Sch_typical dc Sch Gt Ktt Tt Vt
+cicsim run --name Sch_typical ac Sch Gt Ktt Tt Vt --replace <(echo VOS: 0.8998)
+
+# full corner sweep + MC (auto-Vos per corner)
+python3 run_corners.py            # all corners
+python3 run_corners.py --tt --mc  # MC only
 ```
 
 ## Caveats
