@@ -1,0 +1,38 @@
+**.subckt LELO_TWO_STAGE_MILLER VSS VDD VOUT IBIAS VINP VINN
+.subckt LELO_TWO_STAGE_MILLER VSS VDD VOUT IBIAS VINP VINN
+
+* ---------------------------------------------------------------------
+* Two-stage Miller-compensated opamp
+*   Stage 1 : NMOS diff pair (M1,M2) + PMOS mirror load (M3,M4)
+*   Stage 2 : PMOS CS (M5) + NMOS current source load (M6)
+*   Comp    : Rz + Cc between stage-1 output (vout1) and VOUT
+*   Bias    : NMOS diode MNB at IBIAS pin sources all NMOS gates
+* ---------------------------------------------------------------------
+
+* ------- Bias reference (10 µA pushed INTO IBIAS pin externally) ------
+XMNB  IBIAS  IBIAS  VSS  VSS  sky130_fd_pr__nfet_01v8 L=2 W=4  nf=1 m=1
+
+* ------- Stage-1 tail (1:2 mirror -> 20 µA) ---------------------------
+XMT   ntail  IBIAS  VSS  VSS  sky130_fd_pr__nfet_01v8 L=2 W=8  nf=1 m=1
+
+* ------- Stage-1 NMOS input pair (10 µA per branch) -------------------
+XM1   n1     VINP   ntail VSS sky130_fd_pr__nfet_01v8 L=1 W=20 nf=1 m=1
+XM2   vout1  VINN   ntail VSS sky130_fd_pr__nfet_01v8 L=1 W=20 nf=1 m=1
+
+* ------- Stage-1 PMOS current-mirror load -----------------------------
+XM3   n1     n1     VDD  VDD  sky130_fd_pr__pfet_01v8 L=2 W=10 nf=1 m=1
+XM4   vout1  n1     VDD  VDD  sky130_fd_pr__pfet_01v8 L=2 W=10 nf=1 m=1
+
+* ------- Stage-2 PMOS CS (8x mirror of M3 -> 80 µA when balanced) -----
+XM5   VOUT   vout1  VDD  VDD  sky130_fd_pr__pfet_01v8 L=2 W=80 nf=1 m=1
+
+* ------- Stage-2 NMOS current source (8x MNB -> 80 µA) ----------------
+XM6   VOUT   IBIAS  VSS  VSS  sky130_fd_pr__nfet_01v8 L=2 W=32 nf=1 m=1
+
+* ------- Miller compensation network ----------------------------------
+*   Cc sets dominant pole; Rz placed in series cancels the RHP zero
+*   Choose Rz ≈ 1/gm5 (gm5 ≈ 1 mS at 80 µA, L=2µm) → ~1 kΩ
+RZ    vout1  ncc    1.6k
+CC    ncc    VOUT   2p
+
+.ends

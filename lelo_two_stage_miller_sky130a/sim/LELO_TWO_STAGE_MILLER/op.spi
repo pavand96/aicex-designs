@@ -1,0 +1,63 @@
+*TB LELO_TWO_STAGE_MILLER — OP at offset-corrected bias
+.include ../../../work/xsch/LELO_TWO_STAGE_MILLER.spice
+.option TNOM=27 GMIN=1e-12 reltol=1e-3 srcsteps=10 itl1=300 itl6=200
+
+.param AVDD      = 1.8
+.param vcm       = 0.9
+.param vos       = 0.89979
+.param ibias_val = 10u
+
+VSS    VSS    0      dc 0
+VDD    VDD    0      dc {AVDD}
+VVINP  VINP   0      dc {vos}
+VVINN  VINN   0      dc {vcm}
+IIBIAS VSS    IBIAS  dc {ibias_val}
+.include ../xdut.spi
+
+.nodeset v(ibias)        = 0.66
+.nodeset v(xdut.ntail)   = 0.20
+.nodeset v(xdut.n1)      = 1.10
+.nodeset v(xdut.vout1)   = 0.55
+.nodeset v(xdut.ncc)     = 0.90
+.nodeset v(vout)         = 0.90
+
+.save all
+
+.control
+set num_threads=8
+unset askquit
+set filetype=ascii
+op
+let gm1  = @m.xdut.xm1.msky130_fd_pr__nfet_01v8[gm]
+let gm5  = @m.xdut.xm5.msky130_fd_pr__pfet_01v8[gm]
+let gds2 = @m.xdut.xm2.msky130_fd_pr__nfet_01v8[gds]
+let gds4 = @m.xdut.xm4.msky130_fd_pr__pfet_01v8[gds]
+let gds5 = @m.xdut.xm5.msky130_fd_pr__pfet_01v8[gds]
+let gds6 = @m.xdut.xm6.msky130_fd_pr__nfet_01v8[gds]
+let A1   = gm1/(gds2+gds4)
+let A2   = gm5/(gds5+gds6)
+let A_db = 20*log10(A1*A2)
+
+echo ""
+echo "===== Bias point ====="
+print v(ibias) v(xdut.ntail) v(xdut.n1) v(xdut.vout1) v(vout)
+echo ""
+echo "===== Currents (uA) ====="
+print @m.xdut.xmnb.msky130_fd_pr__nfet_01v8[id]*1e6
+print @m.xdut.xmt.msky130_fd_pr__nfet_01v8[id]*1e6
+print @m.xdut.xm1.msky130_fd_pr__nfet_01v8[id]*1e6
+print @m.xdut.xm5.msky130_fd_pr__pfet_01v8[id]*1e6
+print @m.xdut.xm6.msky130_fd_pr__nfet_01v8[id]*1e6
+echo ""
+echo "===== Small-signal & gain ====="
+print gm1 gm5 gds2 gds4 gds5 gds6
+print A1 A2 A_db
+echo ""
+echo "===== VDS / VDSAT ====="
+print @m.xdut.xm1.msky130_fd_pr__nfet_01v8[vds] @m.xdut.xm1.msky130_fd_pr__nfet_01v8[vdsat]
+print @m.xdut.xm5.msky130_fd_pr__pfet_01v8[vds] @m.xdut.xm5.msky130_fd_pr__pfet_01v8[vdsat]
+print @m.xdut.xm6.msky130_fd_pr__nfet_01v8[vds] @m.xdut.xm6.msky130_fd_pr__nfet_01v8[vdsat]
+write {cicname}.raw
+quit
+.endc
+.end
