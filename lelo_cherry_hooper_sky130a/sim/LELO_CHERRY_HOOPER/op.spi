@@ -1,29 +1,37 @@
-*TB LELO_CHERRY_HOOPER — Operating Point
+*TB LELO_CHERRY_HOOPER — Operating Point (with internal bias mirror)
 .include ../../../work/xsch/LELO_CHERRY_HOOPER.spice
 
-.option TNOM=27
+.option TNOM=27 GMIN=1e-12 reltol=1e-3 srcsteps=10 itl1=300
 .temp 27
 
-.param AVDD     = 1.8
-.param vcm      = 0.9
-.param vbiasn   = 0.7    $ NMOS tail gate bias
-.param vbiasp   = 0.4
+.param AVDD      = 1.8
+.param vcm       = 0.9
+.param ibias_val = 10u
 
 VSS    VSS    0      dc 0
 VDD    VDD    0      dc {AVDD}
 VVINP  VINP   0      dc {vcm}
 VVINM  VINN   0      dc {vcm}
-VBN    VBIASN VSS    dc {vbiasn}
-VBP    VBIASP VSS    dc {vbiasp}
+
+* Push 10 uA INTO IBIAS pin so the NMOS diode XMNB sinks it.
+* Convention: I N+ N- pos -> draws current from N+, pushes into N-.
+IIBIAS VSS    IBIAS  dc {ibias_val}
 
 .include ../xdut.spi
 
-.nodeset v(voutp)        = 0.9
-.nodeset v(voutn)        = 0.9
-.nodeset v(xdut.nA)      = 0.9
-.nodeset v(xdut.nB)      = 0.9
-.nodeset v(xdut.ntail1)  = 0.25
-.nodeset v(xdut.ntail2)  = 0.25
+* --------------------------------------------------------------------
+* NODESET — guide every mirror leg + each high-impedance node.
+* This is critical: with two cascaded current mirrors and high-Z output
+* nodes, ngspice will otherwise land on a degenerate solution.
+* --------------------------------------------------------------------
+.nodeset v(ibias)         = 0.70    $ NMOS diode VGS @ 10 uA
+.nodeset v(xdut.vbiasp)   = 0.40    $ low VBIASP -> high VSG (~1.4V) -> PMOS sources >>10uA at W=2/L=1
+.nodeset v(xdut.ntail1)   = 0.20
+.nodeset v(xdut.ntail2)   = 0.30
+.nodeset v(xdut.nA)       = 1.10
+.nodeset v(xdut.nB)       = 1.10
+.nodeset v(voutp)         = 1.10
+.nodeset v(voutn)         = 1.10
 
 .save all
 
@@ -35,52 +43,38 @@ set filetype=ascii
 op
 
 echo "================================================"
-echo "  CHERRY-HOOPER OP — node voltages"
+echo "  CHERRY-HOOPER OP (real bias mirror)"
 echo "================================================"
-print v(vdd) v(vss) v(vbiasn) v(vbiasp)
+print v(vdd) v(vss) v(ibias) v(xdut.vbiasp)
 print v(vinp) v(vinn)
 print v(xdut.ntail1) v(xdut.ntail2)
 print v(xdut.nA) v(xdut.nB)
 print v(voutp) v(voutn)
-
 echo ""
-echo "--- Branch currents (A) ---"
-echo "M1 ID:"
-print @m.xdut.xm1.msky130_fd_pr__nfet_01v8[id]
-echo "M2 ID:"
-print @m.xdut.xm2.msky130_fd_pr__nfet_01v8[id]
-echo "M3 ID:"
-print @m.xdut.xm3.msky130_fd_pr__nfet_01v8[id]
-echo "M4 ID:"
-print @m.xdut.xm4.msky130_fd_pr__nfet_01v8[id]
-echo "MT1 (ISS1) ID:"
+echo "--- Currents (A) ---"
+echo "IBIAS reference (XMNB diode):"
+print @m.xdut.xmnb.msky130_fd_pr__nfet_01v8[id]
+echo "MNREF mirror leg:"
+print @m.xdut.xmnref.msky130_fd_pr__nfet_01v8[id]
+echo "MPB PMOS diode:"
+print @m.xdut.xmpb.msky130_fd_pr__pfet_01v8[id]
+echo "MT1 tail (stage 1):"
 print @m.xdut.xmt1.msky130_fd_pr__nfet_01v8[id]
-echo "MT2 (ISS2) ID:"
+echo "MT2 tail (stage 2):"
 print @m.xdut.xmt2.msky130_fd_pr__nfet_01v8[id]
-echo "I1 (PMOS load VOUTN) ID:"
+echo "M1 input pair:"
+print @m.xdut.xm1.msky130_fd_pr__nfet_01v8[id]
+echo "M3 stage-2 CS:"
+print @m.xdut.xm3.msky130_fd_pr__nfet_01v8[id]
+echo "I1 PMOS load on VOUTN:"
 print @m.xdut.xmi1.msky130_fd_pr__pfet_01v8[id]
-echo "I3 (PMOS load nA) ID:"
-print @m.xdut.xmi3.msky130_fd_pr__pfet_01v8[id]
-
+echo "Total IDD:"
+print -i(vdd)
 echo ""
-echo "--- Small-signal parameters ---"
-echo "M1 gm, gds:"
-print @m.xdut.xm1.msky130_fd_pr__nfet_01v8[gm] @m.xdut.xm1.msky130_fd_pr__nfet_01v8[gds]
-echo "M3 gm, gds:"
-print @m.xdut.xm3.msky130_fd_pr__nfet_01v8[gm] @m.xdut.xm3.msky130_fd_pr__nfet_01v8[gds]
-echo "I1 gds (PMOS load):"
+echo "--- gm / gds ---"
+print @m.xdut.xm1.msky130_fd_pr__nfet_01v8[gm]
+print @m.xdut.xm3.msky130_fd_pr__nfet_01v8[gm]
 print @m.xdut.xmi1.msky130_fd_pr__pfet_01v8[gds]
-
-echo ""
-echo "--- Saturation check ---"
-echo "M1 vds, vdsat:"
-print @m.xdut.xm1.msky130_fd_pr__nfet_01v8[vds] @m.xdut.xm1.msky130_fd_pr__nfet_01v8[vdsat]
-echo "M3 vds, vdsat:"
-print @m.xdut.xm3.msky130_fd_pr__nfet_01v8[vds] @m.xdut.xm3.msky130_fd_pr__nfet_01v8[vdsat]
-echo "MT1 vds, vdsat:"
-print @m.xdut.xmt1.msky130_fd_pr__nfet_01v8[vds] @m.xdut.xmt1.msky130_fd_pr__nfet_01v8[vdsat]
-echo "I1 vds, vdsat:"
-print @m.xdut.xmi1.msky130_fd_pr__pfet_01v8[vds] @m.xdut.xmi1.msky130_fd_pr__pfet_01v8[vdsat]
 
 write {cicname}.raw
 quit

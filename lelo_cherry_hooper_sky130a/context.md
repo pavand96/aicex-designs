@@ -209,10 +209,137 @@ When starting any new aicex amplifier IP, follow this checklist:
 
 ---
 
-## 10. To-Do for Future Iterations
+## 10. Real Bias Mirror (replaces voltage-source biases)
 
-- Replace voltage-source biases with a real diode-connected NMOS + PMOS reference + 1:k mirrors (and document the convergence trick: nodeset every mirror leg).
-- Add tran TB to extract slew rate and settling.
-- Add corner sweep (`make tfs`) for ss/ff verification.
-- Add Monte-Carlo (`make mc`) for `RF` mismatch sensitivity.
-- Investigate whether substituting an active load + Cherry-Hooper hybrid (e.g. cascoded loads on stage 2) raises gain past 30 dB without losing >0.5 GHz of GBW.
+The voltage-source bias version (Section 7) is great for bring-up but unrealistic. A production design needs a self-contained reference + 1:k mirror generators. We rebuilt the subckt with:
+
+```
+                  IBIAS pin (10 µA pushed in by IIBIAS)
+                       │
+                       ▼ diode
+   XMNB  W=8  L=1.0  nf=1   ──▶  defines V_GS_n  (≈0.66 V)
+   XMNREF W=8 L=1.0          ──▶  same V_GS, sources 10 µA up to vbiasp
+   XMPB   W=2 L=1.0  (PMOS diode, drain=gate=vbiasp)  defines V_SG_p (≈1.36 V)
+
+   Tail  XMT1, XMT2  W=80 L=1   gated by IBIAS    → 1:10 mirror (≈126 µA each)
+   Loads XMI1..MI4   W=20 L=1   gated by vbiasp   → 1:10 mirror (≈66  µA each)
+```
+
+**New pinout**: `VSS VDD VOUTP VOUTN IBIAS VINP VINN`  (VBIASN/VBIASP gone).
+
+Testbench just provides the reference current:
+```
+IIBIAS  VSS  IBIAS  dc 10u    ; pushes 10 µA INTO the IBIAS pin
+```
+
+### 10.1 Convergence trick (the part that *will* bite you)
+
+A self-biased loop has at least two stable equilibria — `all-off` (everything at 0 V or VDD, no current) and `all-on` (the intended bias point). Plain `op` analysis lands on whichever Newton picks first, which is almost always `all-off`. First two attempts:
+- `IIBIAS VSS IBIAS dc 10u` → IBIAS settles at 78 mV, all currents in the pA range. **Bad equilibrium.**
+- Flip direction `IIBIAS IBIAS VSS dc 10u` → IBIAS = −11 mV, same dead state.
+
+**The fix is two-pronged:**
+
+1. **`.option srcsteps=10 itl1=300`** — ramp every voltage/current source from 0 to its DC value in 10 steps, with up to 300 Newton iterations each. This walks the operating point continuously from the trivial solution into the non-trivial one.
+2. **`.nodeset` every mirror leg** *and* every high-impedance internal node, with lowercase names. For Cherry-Hooper:
+   ```
+   .nodeset v(ibias)        = 0.70   ; expected V_GS of NMOS diode
+   .nodeset v(xdut.vbiasp)  = 0.40   ; VDD - V_SG of PMOS diode
+   .nodeset v(xdut.ntail1)  = 0.20   ; tail of input pair
+   .nodeset v(xdut.ntail2)  = 0.30   ; tail of stage-2 pair
+   .nodeset v(xdut.nA)      = 1.10
+   .nodeset v(xdut.nB)      = 1.10
+   .nodeset v(voutp)        = 1.10
+   .nodeset v(voutn)        = 1.10
+   ```
+
+With both in place, `op` lands cleanly: IBIAS = 0.66 V, VBIASP = 0.44 V, MNB = 10.0 µA, MNREF = MPB = 9.78 µA, tail = 126 µA, branch = 63 µA, VOUT = 1.60 V.
+
+### 10.2 RF re-tuning after the mirror change
+
+The voltage-bias version (Section 7) had branch ≈ 105 µA → gm₁ ≈ 2.0 mS → 20 dB at RF = 6 kΩ. With the mirror, branch ≈ 63 µA → gm₁ ≈ 1.30 mS, so 6 kΩ only gives **11.9 dB**. To recover ~20 dB:
+
+| RF (Ω) | Gain (dB) | f3dB (MHz) | GBW (GHz) |
+|--------|-----------|------------|-----------|
+|  6 k   |  11.9     |  654       |  1.32     |
+| 10 k   |  16.2     |  513       |  1.39     |
+| 15 k   |  19.2     |  418       |  1.42     |
+| **16 k** | **19.6** | **405**   | **1.42**  |
+
+**Final**: `RF1 = RF2 = 16 kΩ` for the bias-mirror version.
+
+---
+
+## 11. Transient TB (`tran.spi`) — slew rate & settling
+
+Two PWL-driven steps in one run:
+- **Small-signal step** at *t* = 5 ns:  ±5 mV (10 mV diff) — used for settling and overshoot.
+- **Large-signal step** at *t* = 25 ns: ±100 mV (200 mV diff) — used for slew.
+
+Key ngspice-isms learned the hard way:
+1. **Don't use `uic`** — without an OP point the transient diverges immediately on this self-biased loop. Plain `tran 20p 50n` is fine because `srcsteps + nodeset` already give a clean OP.
+2. **`meas ... AVG/PP/MAX/WHEN`** can only operate on a single named vector, *not* an expression. Build the differential output once with `let vodiff = v(voutp) - v(voutn)` *after* `tran`, then `meas tran ... vodiff`.
+3. **`WHEN vodiff = <expr>`** rejects parenthesised expressions on the RHS — pass either a number or a previously defined scalar.
+4. **Slew via `deriv`** is the most robust:
+   ```
+   let svd = abs(deriv(vodiff))
+   meas tran sr_pos MAX svd FROM=25n TO=27n
+   ```
+   This sidesteps the threshold-crossing problem when the output rings.
+
+**Result (typical, IBIAS = 10 µA, CL = 100 fF, RF = 16 kΩ):**
+- Peak slew |dv/dt| of differential output = **1.57 V/ns ≈ 1570 V/µs**
+- Theoretical SR = (I_tail / CL) × 2 (both outputs slewing) = (126 µA / 100 fF) × 2 = 2.52 V/ns — measured value is ~62 % of theory because the PMOS load can't fully source the tail current during slewing.
+- Small-step pk-pk = 357 mV vs final = 225 mV → ~60 % overshoot ⇒ **phase margin is poor (≈ 0°)**. The AC `pm` value of 360° was not just a wrap artifact; the design genuinely needs Miller compensation for closed-loop use. Open-loop bandwidth/gain is fine.
+
+---
+
+## 12. Corner Sweep (manual, hand-written netlist)
+
+`make tfs` regenerates the netlist from xschem, which destroys the hand-written file. Run cicsim directly per corner instead:
+
+```bash
+cicsim run --name Sch_typical ac Sch Gt Ktt Tt Vt
+cicsim run --name Sch_ss      ac Sch Gt Kss Th Vl    # slow / hot / low-VDD
+cicsim run --name Sch_ff      ac Sch Gt Kff Tl Vh    # fast / cold / high-VDD
+```
+
+| Corner | Gain (dB) | f3dB (MHz) | GBW (GHz) |
+|--------|-----------|------------|-----------|
+| TT 27 °C 1.8 V    | 19.6 | 405 | 1.42 |
+| SS 85 °C 1.62 V   | 15.8 | 350 | 1.01 |
+| FF −40 °C 1.98 V  | 23.2 | 466 | 1.87 |
+
+Spread: gain **±3.7 dB**, GBW **0.86 GHz**. SS is the worst case for both metrics, as expected for a gm-limited design.
+
+---
+
+## 13. Monte-Carlo (process + mismatch)
+
+Use the `Kttmm` corner — SKY130A's typical-process corner with `mc_pr_switch = 1` enabled, which turns on AGAUSS mismatch on every device (NMOS, PMOS, resistors). 30 runs:
+
+```bash
+cicsim run --name Sch_mc --count 30 acmc Sch Gt Kttmm Tt Vt
+```
+
+A separate `acmc.spi` is used (no `fgbw`/`pm` measurements) because mismatch can collapse gain so far that the 0 dB crossing doesn't exist, and cicsim treats a failed `meas` as a failed run.
+
+**Post-process** with a tiny Python script over `output_acmc/*.log`:
+
+| Metric | Mean | σ | Min | Max |
+|--------|------|-----|-----|-----|
+| Gain (dB) — all 30      | 15.6 | 13.5 | −32.5 | 23.2 |
+| Gain (dB) — healthy 27  | **19.8** | **1.34** | 17.3 | 23.2 |
+| f3dB (MHz)              | 379 | 94 | 83 | 482 |
+
+**Important finding — startup yield**: 3 out of 30 runs (10 %) landed in the *wrong* equilibrium of the bias mirror under heavy mismatch (gain came out −32 dB). The 27 healthy runs match typical exactly. A startup circuit (kick-up transistor or RC startup) would be needed to make this design production-worthy. This is exactly the failure mode the convergence trick (`srcsteps + nodeset`) hides at the typical corner.
+
+---
+
+## 14. Updated To-Do
+
+- Add a **startup kicker** (e.g. weak diode-connected MOS pulling IBIAS up at power-up) and re-run the MC — target zero startup failures across 100 runs.
+- Compensation cap from `nA → VOUTP` (and `nB → VOUTN`) to recover ≥ 60° phase margin without halving GBW.
+- Investigate cascoded PMOS loads on stage 2 to push gain past 30 dB without losing >0.5 GHz of GBW.
+- Replace `cp -a` repo sync with a Makefile target.
+
