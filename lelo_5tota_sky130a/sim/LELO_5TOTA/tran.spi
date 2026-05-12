@@ -1,0 +1,114 @@
+*TB LELO_5TOTA — Transient Response (1 kHz differential sine, 10 periods)
+*----------------------------------------------------------------
+* Include
+*----------------------------------------------------------------
+#ifdef Lay
+.include ../../../work/lpe/LELO_5TOTA_lpe.spi
+#else
+.include ../../../work/xsch/LELO_5TOTA.spice
+#endif
+
+*-----------------------------------------------------------------
+* OPTIONS
+*-----------------------------------------------------------------
+.option TNOM=27 GMIN=1e-15 reltol=1e-3
+.temp 27
+
+*-----------------------------------------------------------------
+* PARAMETERS
+*-----------------------------------------------------------------
+.param AVDD       = 1.8
+.param vcm        = 0.3
+.param ibias_val  = 6u
+
+* Differential sine input
+.param fin        = 1k
+.param vdiff_pk   = 2m
+
+*-----------------------------------------------------------------
+* SOURCES
+*-----------------------------------------------------------------
+VSS     VSS     0       dc 0
+VDD     VDD     0       dc {AVDD}
+
+* Differential sinusoidal drive around common-mode
+* Each input gets half the total differential amplitude
+VVINP   VINP    0       SIN({vcm} {vdiff_pk/2} {fin})
+VVINM   VINN    0       SIN({vcm} {-vdiff_pk/2} {fin})
+
+* Bias current into IBIAS node
+IIBIAS  VSS     IBIAS   dc {ibias_val}
+
+*-----------------------------------------------------------------
+* DUT
+*-----------------------------------------------------------------
+.include ../xdut.spi
+
+*----------------------------------------------------------------
+* NODESET — helps startup
+*----------------------------------------------------------------
+.nodeset v(vout)       = 1.05
+.nodeset v(xdut.net1)  = 0.45
+.nodeset v(xdut.net2)  = 0.80
+.nodeset v(ibias)      = 0.55
+
+*----------------------------------------------------------------
+* SAVE
+*----------------------------------------------------------------
+.save all
+.save v(VDD) v(VSS) v(VINP) v(VINN) v(IBIAS) v(VOUT)
+.save v(xdut.net1) v(xdut.net2)
+.save i(VDD) i(IIBIAS)
+
+*----------------------------------------------------------------
+* NGSPICE control
+*----------------------------------------------------------------
+.control
+set num_threads=8
+unset askquit
+
+op
+
+echo "================================================"
+echo "  5T OTA — TRANSIENT ANALYSIS"
+echo "================================================"
+echo ""
+echo "--- Initial OP values ---"
+print v(vdd) v(vss)
+print v(vinp) v(vinn)
+print v(ibias)
+print v(xdut.net1) v(xdut.net2) v(vout)
+echo ""
+
+* 1 kHz => 1 ms period
+* 10 periods => 10 ms total simulation time
+* Time step 1u = 1000 points/period — sufficient resolution for 10th harmonic
+tran 1u 10m
+
+* ---- THD via Fourier decomposition ----
+* fourier uses the last 1/fund_freq seconds of data (i.e. the last settled period)
+* nfreqs = 10 → compute fundamental + harmonics H2…H10
+* Output: magnitude/phase of each harmonic and THD in percent
+set nfreqs=10
+fourier 1000 v(vout)
+
+echo "================================================"
+echo "  FINAL VALUES AT END OF TRANSIENT"
+echo "================================================"
+print v(vinp) v(vinn)
+print v(ibias)
+print v(xdut.net1) v(xdut.net2) v(vout)
+echo ""
+echo "--- Device currents at final point ---"
+print @m.xdut.xm2.msky130_fd_pr__nfet_01v8[id]
+print @m.xdut.xm1.msky130_fd_pr__nfet_01v8[id]
+print @m.xdut.xm3.msky130_fd_pr__pfet_01v8[id]
+print @m.xdut.xm4.msky130_fd_pr__pfet_01v8[id]
+print @m.xdut.xm5.msky130_fd_pr__nfet_01v8[id]
+print @m.xdut.xm6.msky130_fd_pr__nfet_01v8[id]
+
+write {cicname}.raw
+quit
+.endc
+
+.end

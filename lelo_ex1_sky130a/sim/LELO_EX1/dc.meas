@@ -1,0 +1,28 @@
+* Measure LELO_EX1
+.control
+
+load {cicname}.raw
+setplot dc1
+
+let id = -i(vdd)
+let gm = deriv(id)
+
+let W = 60u
+let L = 0.8u
+let vth = 0.55
+
+* assuming source is at 0 for common-source stage
+let vgs = v(vin)
+let vds = v(vout)
+let vov = vgs - vth
+
+* valid only when above threshold and in saturation
+* let uncox = (vov > 50m) ? ((vds > vov) ? (2*id/((W/L)*vov*vov)) : 0) : 0
+let uncox = (2*id/((W/L)*vov*vov))
+echo "MEAS_START"
+display
+* plot uncox vs v(vin)
+print vov
+echo "MEAS_END"
+
+.endc

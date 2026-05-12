@@ -1,0 +1,20 @@
+.include "lelo_generated.spice"
+
+VSS VSS 0 dc 0
+VDD VDD 0 dc 1.8
+VIN VIN 0 dc 1.0 ac 1
+
+XDUT VOUT VSS VDD VIN LELO_EX1
+
+.save all
+
+.control
+set filetype=ascii
+op
+write op.raw
+ac dec 100 1 1e9
+write ac.raw
+quit
+.endc
+
+.end

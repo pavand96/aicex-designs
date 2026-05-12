@@ -1,0 +1,62 @@
+*TB_LELO_MODELE - 2D DC Sweep with body bias VSB=0.6V
+*VB=-0.6V, VS=0V => VSB=0.6V
+*Nested sweep: VDS outer loop, VGS inner (both relative to VS)
+*-----------------------------------------------------------------
+* Include
+*-----------------------------------------------------------------
+#ifdef Lay
+.include ../../../work/lpe/LELO_MODELE_lpe.spi
+#else
+.include ../../../work/xsch/LELO_MODELE.spice
+#endif
+
+*-----------------------------------------------------------------
+* OPTIONS
+*-----------------------------------------------------------------
+.option TNOM=27 GMIN=1e-15 reltol=1e-3
+
+*-----------------------------------------------------------------
+* INDEPENDENT SOURCES
+* VS=0 (source at GND), VB=-0.6V (body/bulk)
+* VGS, VDS are differential relative to VS
+*-----------------------------------------------------------------
+VSrc  VS   0    dc 0
+VBody VB   0    dc -0.6
+VGS   VG   VS   dc 0
+VDS   VD   VS   dc 0
+
+*-----------------------------------------------------------------
+* DUT
+*-----------------------------------------------------------------
+.include ../xdut.spi
+
+*-----------------------------------------------------------------
+* NESTED DC SWEEP (VDS outer, VGS inner)
+* VDS 0.1V to 1.8V in 0.01V steps (171 points)
+* VGS 0V to 1.8V in 0.01V steps (181 points per VDS)
+* Total: ~30951 points
+*-----------------------------------------------------------------
+.dc VDS 0.1 1.8 0.01 VGS 0 1.8 0.01
+
+*-----------------------------------------------------------------
+* SAVE DATA
+*-----------------------------------------------------------------
+.save all
+.save v(VG) v(VD) v(VS) v(VB) i(VDS)
+
+*-----------------------------------------------------------------
+* NGSPICE control
+*-----------------------------------------------------------------
+.control
+set num_threads=20
+unset askquit
+set filetype=ascii
+set hcopydevtype=postscript
+
+run
+write {cicname}.raw
+
+quit
+.endc
+
+.end

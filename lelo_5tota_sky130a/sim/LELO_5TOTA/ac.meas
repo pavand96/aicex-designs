@@ -1,0 +1,62 @@
+* Measure LELO_5TOTA — AC
+.control
+
+load {cicname}.raw
+
+echo "MEAS_START"
+
+* Normalised gain: divide by actual differential input amplitude
+* vdb() only works on node names; use 20*log10(abs()) for computed vectors
+* vp() returns RADIANS — convert to degrees explicitly
+let vidiff       = v(vinp) - v(vinn)
+let gain_mag_db  = 20*log10(abs(v(vout))) - 20*log10(abs(vidiff))
+let gain_ph_deg  = 180/PI * vp(vout)
+
+* ---- DC gain (at 1 Hz) ----
+meas ac dc_gain_db    FIND gain_mag_db  AT=1
+
+* ---- -3dB bandwidth ----
+let f3db_target = dc_gain_db - 3
+meas ac f3db          WHEN gain_mag_db = f3db_target
+
+* ---- Peak gain and peaking above DC value ----
+meas ac peak_gain     MAX gain_mag_db
+let gain_peaking = peak_gain - dc_gain_db
+
+* ---- Unity-gain bandwidth (GBW) ----
+meas ac fgbw          WHEN gain_mag_db = 0
+
+* ---- Phase Margin ----
+meas ac phase_ugf     FIND gain_ph_deg  WHEN gain_mag_db = 0
+let pm = phase_ugf + 180
+
+* ---- Gain Margin ----
+* Pre-initialise to sentinel (1e6) so that if phase never reaches -180 deg
+* (unconditionally stable) the let/print below do not cascade-error
+let gm_at_180 = 1e6
+meas ac gm_at_180     FIND gain_mag_db  WHEN gain_ph_deg = -180
+if gm_at_180 < 999
+    let gain_margin = -gm_at_180
+    echo "  Gain Margin (dB) = $&gain_margin"
+else
+    echo "  Gain Margin: N/A — phase never crosses -180 deg (unconditionally stable)"
+end
+
+* ---- Group delay at low frequency (≈ DC) ----
+* GD = -dφ/dω; deriv() differentiates w.r.t. sweep variable (frequency in Hz)
+* Single-pole estimate: GD_DC ≈ 1/(2π·f3dB)
+let group_delay_s = -deriv(vp(vout)) / (2*PI)
+meas ac gd_lf         FIND group_delay_s AT=1
+
+print dc_gain_db
+print f3db
+print peak_gain
+print gain_peaking
+print fgbw
+print phase_ugf
+print pm
+print gd_lf
+
+echo "MEAS_END"
+
+.endc

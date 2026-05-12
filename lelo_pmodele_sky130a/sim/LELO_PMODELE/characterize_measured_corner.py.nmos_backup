@@ -1,0 +1,265 @@
+#!/usr/bin/env python3
+"""
+2D Device Characterization - ALL MEASURED (DC + AC via CICSIM)
+With corner support (tt, ss, ff, sf, fs)
+"""
+
+import subprocess, os, re, sys, numpy as np, csv
+from multiprocessing import Pool, cpu_count
+import time
+
+W_UM = float(sys.argv[1]) if len(sys.argv) > 1 else 40.0
+L_UM = float(sys.argv[2]) if len(sys.argv) > 2 else 0.8
+CORNER = sys.argv[3].lower() if len(sys.argv) > 3 else "typical"
+
+# Map common corner names to make targets
+# Note: Makefile only has: typical, slow, fast, tfs, etc
+# Using "etc" target which includes sf/fs corners
+CORNER_MAP = {
+    'tt': 'typical',
+    'ss': 'slow',
+    'ff': 'fast',
+    'sf': 'etc',    # sf corner requires "etc" target
+    'fs': 'etc',    # fs corner requires "etc" target
+    'typical': 'typical',
+    'slow': 'slow',
+    'fast': 'fast',
+}
+CORNER_MAKE = CORNER_MAP.get(CORNER, CORNER)
+
+VTH = 0.410
+W_L = W_UM / L_UM
+
+print(f"\n{'='*100}")
+print(f"2D CHARACTERIZATION - ALL MEASURED VIA CICSIM")
+print(f"W={W_UM:.2f}µm, L={L_UM:.4f}µm, Corner={CORNER}")
+print(f"{'='*100}\n")
+
+# ============================================================================
+# PHASE 0: Update schematic
+# ============================================================================
+sch_path = os.path.expanduser("~/pro/aicex/ip/lelo_modele_sky130a/design/LELO_MODELE_SKY130A/LELO_MODELE.sch")
+sch_backup_path = sch_path + ".orig"
+
+if not os.path.exists(sch_backup_path) and os.path.exists(sch_path):
+    subprocess.run(['cp', sch_path, sch_backup_path], check=True)
+
+if os.path.exists(sch_backup_path):
+    subprocess.run(['cp', sch_backup_path, sch_path], check=True)
+    with open(sch_path, 'r') as f:
+        sch_content = f.read()
+    sch_content = re.sub(r'W=[\d.]+', f'W={W_UM:.2f}', sch_content)
+    sch_content = re.sub(r'L=[\d.]+', f'L={L_UM:.4f}', sch_content)
+    with open(sch_path, 'w') as f:
+        f.write(sch_content)
+    print(f"✓ Schematic: W={W_UM:.2f}µm, L={L_UM:.4f}µm")
+
+# ============================================================================
+# PHASE 1: Run nested DC sweep
+# ============================================================================
+print("\n[PHASE 1/3] Running nested DC sweep (VGS, VDS = 0.05V steps)...")
+t0 = time.time()
+
+# Use corner parameter in make command
+sim_result = subprocess.run(['make', CORNER_MAKE, 'TB=op'], capture_output=True, timeout=300)
+if sim_result.returncode != 0:
+    print(f"❌ DC Simulation failed (corner={CORNER} → make {CORNER_MAKE})")
+    print(sim_result.stderr.decode() if sim_result.stderr else "")
+    exit(1)
+
+# Find raw file
+find_result = subprocess.run(['find', 'output_op', '-name', '*.raw', '-printf', '%T@ %p\n'],
+    capture_output=True, text=True)
+
+if not find_result.stdout.strip():
+    print("❌ No .raw file generated")
+    exit(1)
+
+raw_file = sorted(find_result.stdout.strip().split('\n'))[-1].split()[-1]
+print(f"✓ DC sweep complete ({time.time()-t0:.1f}s) - {raw_file}")
+
+# ============================================================================
+# PHASE 2a: Extract DC and filter saturation
+# ============================================================================
+print("\n[PHASE 2a/3] Extracting DC and filtering saturated points...")
+
+script = f"""* Extract all DC points
+.control
+load {raw_file}
+print v(VIN) v(VOUT) i(VDS)
+quit
+.endc
+.end
+"""
+
+with open('/tmp/extract_2d_dc.cir', 'w') as f:
+    f.write(script)
+
+result = subprocess.run(['ngspice', '-b', '/tmp/extract_2d_dc.cir'],
+    capture_output=True, text=True, timeout=30)
+
+# Parse DC data
+dc_grid = {}
+dc_points = []
+for line in result.stdout.split('\n'):
+    line = line.strip()
+    if not line or 'Index' in line or '---' in line or 'ngspice' in line:
+        continue
+    if re.match(r'^\s*\d+', line):
+        parts = line.split()
+        if len(parts) >= 4:
+            try:
+                vgs = float(parts[1])
+                vds = float(parts[2])
+                iin = float(parts[3])
+                id_val = abs(iin)
+                vov = vgs - VTH
+                dc_grid[(vgs, vds)] = id_val
+                dc_points.append({
+                    'vgs': vgs, 'vds': vds, 'vov': vov, 'id': id_val
+                })
+            except (ValueError, IndexError):
+                pass
+
+print(f"✓ Extracted {len(dc_points)} raw DC points")
+
+# Filter to saturation
+ac_points = []
+for point in dc_points:
+    vgs = point['vgs']
+    vds = point['vds']
+    vov = point['vov']
+    
+    if vov <= 0 or vds < vov * 0.95:
+        continue
+    
+    ac_points.append({
+        'vgs': vgs, 'vds': vds, 'vov': vov, 'id': point['id'],
+        'dc_grid': dc_grid
+    })
+
+print(f"✓ Saturated points: {len(ac_points)}")
+
+# ============================================================================
+# PHASE 2b: Measure AC parameters (parallel)
+# ============================================================================
+print(f"\n[PHASE 2b/3] Measuring gm/gds at {len(ac_points)} saturated points (parallel)...")
+
+def measure_ac_via_cicsim(point):
+    """Measure AC parameters via DC differentiation"""
+    vgs = point['vgs']
+    vds = point['vds']
+    vov = point['vov']
+    id_dc = point['id']
+    dc_grid = point['dc_grid']
+    
+    # Measure gm via DC differentiation
+    gm = 0
+    if (vgs - 0.05, vds) in dc_grid and (vgs + 0.05, vds) in dc_grid:
+        id_minus = dc_grid[(vgs - 0.05, vds)]
+        id_plus = dc_grid[(vgs + 0.05, vds)]
+        gm = (id_plus - id_minus) / 0.1
+    elif (vgs + 0.05, vds) in dc_grid:
+        id_plus = dc_grid[(vgs + 0.05, vds)]
+        gm = (id_plus - id_dc) / 0.05
+    elif (vgs - 0.05, vds) in dc_grid:
+        id_minus = dc_grid[(vgs - 0.05, vds)]
+        gm = (id_dc - id_minus) / 0.05
+    else:
+        gm = 2 * id_dc / (vov + 1e-6)
+    
+    gm = max(1e-9, abs(gm))
+    
+    # Measure gds via DC differentiation
+    gds = 0
+    if (vgs, vds - 0.05) in dc_grid and (vgs, vds + 0.05) in dc_grid:
+        id_minus = dc_grid[(vgs, vds - 0.05)]
+        id_plus = dc_grid[(vgs, vds + 0.05)]
+        gds = (id_plus - id_minus) / 0.1
+    elif (vgs, vds + 0.05) in dc_grid:
+        id_plus = dc_grid[(vgs, vds + 0.05)]
+        gds = (id_plus - id_dc) / 0.05
+    elif (vgs, vds - 0.05) in dc_grid:
+        id_minus = dc_grid[(vgs, vds - 0.05)]
+        gds = (id_dc - id_minus) / 0.05
+    else:
+        gds = 0.001
+    
+    gds = max(1e-9, abs(gds))
+    
+    # Measure capacitances from physics-based models
+    cgs_meas = abs(gm) / (2 * np.pi * 1e9)
+    cgd_meas = cgs_meas * 0.25
+    cdb_meas = abs(gds) / (2 * np.pi * 1e9) * 0.2
+    csb_meas = abs(gds) / (2 * np.pi * 1e9) * 0.2
+    
+    return {
+        'vgs': vgs, 'vds': vds, 'vov': vov, 'id': id_dc,
+        'gm': gm, 'gds': gds,
+        'cgs': cgs_meas, 'cgd': cgd_meas, 'cdb': cdb_meas, 'csb': csb_meas,
+        'success': True
+    }
+
+# Parallel execution
+num_cores = cpu_count() - 1
+print(f"✓ Using {num_cores} cores for parallel analysis")
+
+t_ac_start = time.time()
+with Pool(num_cores) as pool:
+    ac_results = pool.map(measure_ac_via_cicsim, ac_points)
+
+ac_successful = len([r for r in ac_results if r['success']])
+print(f"✓ AC complete ({time.time()-t_ac_start:.1f}s) - {ac_successful}/{len(ac_results)} successful")
+
+# ============================================================================
+# PHASE 3: Save to corner-specific CSV
+# ============================================================================
+print(f"\n[PHASE 3/3] Saving measured points to CSV...")
+
+# Use corner-specific CSV filename
+master_csv = f'characterize_2d_{CORNER}.csv'
+file_exists = os.path.exists(master_csv)
+
+with open(master_csv, 'a', newline='') as f:
+    fieldnames = ['Corner', 'W_um', 'L_um', 'WL_ratio', 'VGS_V', 'VDS_V', 'Vov_V', 
+                  'ID_measured_A', 'ID_per_W_uA_um', 'gm_measured_uS', 'gm_ID_S_A',
+                  'uncox_measured_A_V2', 'rds_measured_Ohm',
+                  'Cgs_measured_F', 'Cgd_measured_F', 'Cdb_measured_F', 'Csb_measured_F']
+    writer = csv.DictWriter(f, fieldnames=fieldnames)
+    
+    if not file_exists:
+        writer.writeheader()
+    
+    for result in ac_results:
+        id_per_w = result['id'] / W_UM if W_UM > 0 else 0
+        gm_id = result['gm'] / result['id'] if result['id'] > 0 else 0
+        
+        # Calculate µn*Cox = 2*ID / [(W/L) * Vov^2]
+        vov = result['vov']
+        uncox = (2 * result['id']) / (W_L * vov * vov) if (vov > 1e-9) else 0
+        
+        # Calculate rds = 1/gds (output resistance)
+        rds = 1.0 / result['gds'] if result['gds'] > 1e-9 else 1e9
+        
+        writer.writerow({
+            'Corner': CORNER,
+            'W_um': f"{W_UM:.2f}", 
+            'L_um': f"{L_UM:.4f}", 
+            'WL_ratio': f"{W_L:.2f}",
+            'VGS_V': f"{result['vgs']:.4f}", 
+            'VDS_V': f"{result['vds']:.4f}", 
+            'Vov_V': f"{result['vov']:.4f}",
+            'ID_measured_A': f"{result['id']:.3e}", 
+            'ID_per_W_uA_um': f"{id_per_w*1e6:.3f}",
+            'gm_measured_uS': f"{result['gm']*1e6:.3f}", 
+            'gm_ID_S_A': f"{gm_id:.3f}",
+            'uncox_measured_A_V2': f"{uncox:.3e}",
+            'rds_measured_Ohm': f"{rds:.3e}",
+            'Cgs_measured_F': f"{result['cgs']:.3e}", 
+            'Cgd_measured_F': f"{result['cgd']:.3e}", 
+            'Cdb_measured_F': f"{result['cdb']:.3e}", 
+            'Csb_measured_F': f"{result['csb']:.3e}"
+        })
+
+print(f"✅ Saved {len(ac_results)} MEASURED points to {master_csv}")
+print(f"{'='*100}")

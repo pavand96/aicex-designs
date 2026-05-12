@@ -1,0 +1,58 @@
+*TB_LELO_MODELE - 2D DC Sweep (VGS and VDS Independent)
+*Nested sweep: VDS outer loop, VGS inner loop
+*-----------------------------------------------------------------
+* Include
+*-----------------------------------------------------------------
+#ifdef Lay
+.include ../../../work/lpe/LELO_MODELE_lpe.spi
+#else
+.include ../../../work/xsch/LELO_MODELE.spice
+#endif
+
+*-----------------------------------------------------------------
+* OPTIONS
+*-----------------------------------------------------------------
+.option TNOM=27 GMIN=1e-15 reltol=1e-3
+
+*-----------------------------------------------------------------
+* INDEPENDENT SOURCES - Direct VGS and VDS control
+*-----------------------------------------------------------------
+VSS   VSS   0    dc 0
+VGS   VG    0    dc 0
+VDS   VD    0    dc 0.5
+
+*-----------------------------------------------------------------
+* DUT
+*-----------------------------------------------------------------
+.include ../xdut.spi
+
+*-----------------------------------------------------------------
+* NESTED DC SWEEP (VDS outer, VGS inner)
+* VDS 0.1V to 1.8V in 0.01V steps (171 points)
+* VGS 0V to 1.8V in 0.01V steps (181 points per VDS)
+* Total: ~30951 points
+*-----------------------------------------------------------------
+.dc VDS 0.1 1.8 0.01 VGS 0 1.8 0.01
+
+*-----------------------------------------------------------------
+* SAVE DATA
+*-----------------------------------------------------------------
+.save all
+.save v(VG) v(VD) i(VDS) i(VSS)
+
+*-----------------------------------------------------------------
+* NGSPICE control
+*-----------------------------------------------------------------
+.control
+set num_threads=20
+unset askquit
+set filetype=ascii
+set hcopydevtype=postscript
+
+run
+write {cicname}.raw
+
+quit
+.endc
+
+.end

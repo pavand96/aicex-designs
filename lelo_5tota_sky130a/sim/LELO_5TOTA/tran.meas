@@ -1,0 +1,25 @@
+* Measure LELO_5TOTA — Transient / THD
+.control
+
+load {cicname}.raw
+
+echo "MEAS_START"
+
+* ---- Output swing: min and max of VOUT over last 5 periods (5ms–10ms) ----
+meas tran vout_max MAX v(vout) FROM=5m TO=10m
+meas tran vout_min MIN v(vout) FROM=5m TO=10m
+let vout_swing_pp = vout_max - vout_min
+
+* ---- THD via Fourier decomposition ----
+* fourier uses the last 1/fund_freq seconds (last settled period)
+* nfreqs = 10 → fundamental + H2…H10; THD printed automatically
+set nfreqs=10
+fourier 1000 v(vout)
+
+print vout_max
+print vout_min
+print vout_swing_pp
+
+echo "MEAS_END"
+
+.endc

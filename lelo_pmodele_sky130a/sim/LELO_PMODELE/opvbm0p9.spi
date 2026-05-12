@@ -1,0 +1,61 @@
+*TB_LELO_PMODELE - 2D DC Sweep with body bias VSB=0.9V
+*VB=0.9V, VDD=1.8V => VSB=0.9V
+*Nested sweep: VD outer, VG inner (absolute voltages)
+*-----------------------------------------------------------------
+* Include
+*-----------------------------------------------------------------
+#ifdef Lay
+.include ../../../work/lpe/LELO_PMODELE_lpe.spi
+#else
+.include ../../../work/xsch/LELO_PMODELE.spice
+#endif
+
+*-----------------------------------------------------------------
+* OPTIONS
+*-----------------------------------------------------------------
+.option TNOM=27 GMIN=1e-15 reltol=1e-3
+
+*-----------------------------------------------------------------
+* INDEPENDENT SOURCES
+* VDD=1.8V (source), VB=0.9V (body 0.9V below source, VSB=0.9V)
+*-----------------------------------------------------------------
+VDD   VDD   0    dc 1.8
+VBody VB    0    dc 0.9
+VG    VG    0    dc 1.8
+VD    VD    0    dc 1.8
+
+*-----------------------------------------------------------------
+* DUT
+*-----------------------------------------------------------------
+.include ../xdut.spi
+
+*-----------------------------------------------------------------
+* NESTED DC SWEEP (VD outer, VG inner) - Reversed for PMOS
+* VD 1.7V down to 0V in -0.01V steps (171 points)
+* VG 1.8V down to 0V in -0.01V steps (181 points per VD)
+* Total: ~30951 points
+*-----------------------------------------------------------------
+.dc VD 1.7 0 -0.01 VG 1.8 0 -0.01
+
+*-----------------------------------------------------------------
+* SAVE DATA
+*-----------------------------------------------------------------
+.save all
+.save v(VG) v(VD) i(VDD)
+
+*-----------------------------------------------------------------
+* NGSPICE control
+*-----------------------------------------------------------------
+.control
+set num_threads=20
+unset askquit
+set filetype=ascii
+set hcopydevtype=postscript
+
+run
+write {cicname}.raw
+
+quit
+.endc
+
+.end

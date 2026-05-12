@@ -1,0 +1,42 @@
+*NMOS Device Characterization - Operating Point
+*Single NMOS in saturation, fixed VDS = 1.2V
+*-----------------------------------------------------------------
+* Library and Models
+*-----------------------------------------------------------------
+.include /home/pavand96/pro/aicex/ip/tech_sky130A/models/sky130.lib.spice typ
+
+*-----------------------------------------------------------------
+* OPTIONS
+*-----------------------------------------------------------------
+.option TNOM=27 GMIN=1e-15 reltol=1e-5 abstol=1e-12
+
+*-----------------------------------------------------------------
+* PARAMETERS - Design Window
+*-----------------------------------------------------------------
+.param VDS_sat = 1.2
+.param L_min = 0.15
+.param W_test = 1.0
+
+*-----------------------------------------------------------------
+* NMOS Single Transistor Testbench
+*-----------------------------------------------------------------
+* Source    Gate     Drain    Bulk
+Mn1 DRAIN   GATE     VSS      VSS  sky130_fd_pr__nfet_01v8 W={W_test} L={L_min}
+
+*-----------------------------------------------------------------
+* DC SOURCES
+*-----------------------------------------------------------------
+VSS    VSS    0       dc 0.0
+VDS    DRAIN  VSS     dc {VDS_sat}
+VGS    GATE   VSS     dc 0.5
+
+*-----------------------------------------------------------------
+* MEASUREMENT: Operating Point
+*-----------------------------------------------------------------
+.control
+op
+print all
+quit
+.endc
+
+.end

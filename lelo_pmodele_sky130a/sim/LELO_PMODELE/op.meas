@@ -1,0 +1,12 @@
+* Measure LELO_PMODELE
+.control
+
+load {cicname}.raw
+
+echo "MEAS_START"
+print v(VG)
+print v(VD)
+print -i(vdd)
+echo "MEAS_END"
+
+.endc

@@ -1,0 +1,18 @@
+library: LELO_EX_SKY130A
+cell: LELO_EX
+# Your name
+author: Pavan Devarasetti
+# Your github username
+github: analogicus
+# Something funny and descriptive
+tagline: A Digital Guy trying Analog sims
+# Your email, if you so wish
+email: pavandnitt96@gmail.com
+# Your github site, usually <github username>.github.io
+url: analogicus.github.io
+doc:
+  # Make docs
+  #libraries:
+  #   <library>:
+  #       - <cell>
+  #       - <cell>

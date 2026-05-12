@@ -1,0 +1,66 @@
+*NMOS Device Characterization - DC Sweep
+*Sweep VGS with fixed VDS = 1.2V (saturation region)
+*Extract: ID, gm, gds, and calculate effective uCox
+*-----------------------------------------------------------------
+* Library and Models
+*-----------------------------------------------------------------
+.include /home/pavand96/pro/aicex/ip/tech_sky130A/models/sky130.lib.spice typ
+
+*-----------------------------------------------------------------
+* OPTIONS
+*-----------------------------------------------------------------
+.option TNOM=27 GMIN=1e-15 reltol=1e-5 abstol=1e-12
+
+*-----------------------------------------------------------------
+* PARAMETERS - Design Window
+*-----------------------------------------------------------------
+.param VDS_sat = 1.2
+.param L_min = 0.15
+.param L_long = 0.5
+.param W_test = 1.0
+
+*-----------------------------------------------------------------
+* NMOS Single Transistor Testbench (for multiple length analysis)
+*-----------------------------------------------------------------
+* Minimum length device
+* Source    Gate     Drain    Bulk
+Mn1 DRAIN   GATE     VSS      VSS  sky130_fd_pr__nfet_01v8 W={W_test} L={L_min}
+
+*-----------------------------------------------------------------
+* DC SOURCES
+*-----------------------------------------------------------------
+VSS    VSS    0           dc 0.0
+VDS    DRAIN  VSS         dc {VDS_sat}
+VGS    GATE   VSS         dc 0.0
+
+*-----------------------------------------------------------------
+* SAVE Operating Point Data
+*-----------------------------------------------------------------
+.save all
+.save v(GATE) v(DRAIN) i(VDS)
+
+*-----------------------------------------------------------------
+* DC SWEEP: VGS from 0 to 1.2V in saturation region
+* Operating window: Vov = 0.12V to 0.25V (for moderate inversion)
+* Threshold Vth ≈ 0.41V (typical SKY130), so VGS sweep: 0.53V to 0.66V
+* Extended to cover wider range for extraction
+*-----------------------------------------------------------------
+.control
+set num_threads=8
+set color0=white
+set color1=black
+unset askquit
+set filetype=ascii
+
+* DC sweep VGS from 0.3V to 1.0V (covers weak to strong inversion)
+dc VGS 0.3 1.0 0.01
+
+* Export data to file
+set hcopydevtype=postscript
+print all > nmos_dc_sweep.txt
+write nmos_dc_sweep.raw
+
+quit
+.endc
+
+.end

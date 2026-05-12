@@ -1,0 +1,40 @@
+* Measure LELO_5TOTA — DC (ICMR / OCMR)
+.control
+
+echo "MEAS_START"
+
+* ---- ICMR: load sweep 1 (VCM sweep, VOUT fixed) ----
+load {cicname}_icmr.raw
+
+let xm5_sat_margin = @m.xdut.xm5.msky130_fd_pr__nfet_01v8[vds] - @m.xdut.xm5.msky130_fd_pr__nfet_01v8[vdsat]
+let xm1_sat_margin = @m.xdut.xm1.msky130_fd_pr__nfet_01v8[vds] - @m.xdut.xm1.msky130_fd_pr__nfet_01v8[vdsat]
+
+meas dc icmr_low   WHEN xm5_sat_margin = 0 RISE=1
+meas dc icmr_high  WHEN xm1_sat_margin = 0 FALL=1
+let icmr_range = icmr_high - icmr_low
+
+* ---- OCMR: load sweep 2 (VOUT sweep, VCM fixed) ----
+load {cicname}.raw
+
+let xm2_sat_margin = @m.xdut.xm2.msky130_fd_pr__nfet_01v8[vds] - @m.xdut.xm2.msky130_fd_pr__nfet_01v8[vdsat]
+let xm4_sat_margin = @m.xdut.xm4.msky130_fd_pr__pfet_01v8[vds] - @m.xdut.xm4.msky130_fd_pr__pfet_01v8[vdsat]
+
+meas dc ocmr_low   WHEN xm2_sat_margin = 0 RISE=1
+meas dc ocmr_high  WHEN xm4_sat_margin = 0 FALL=1
+let ocmr_range = ocmr_high - ocmr_low
+
+* ---- Switch back to ICMR plot to read ICMR scalars ----
+* icmr_low/high were computed in dc1, ocmr in dc2; setplot dc1 restores them
+setplot dc1
+
+print icmr_low
+print icmr_high
+print icmr_range
+setplot dc2
+print ocmr_low
+print ocmr_high
+print ocmr_range
+
+echo "MEAS_END"
+
+.endc

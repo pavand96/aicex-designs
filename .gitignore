@@ -1,0 +1,9 @@
+# Large characterization CSVs (>100MB, exceeds GitHub limit)
+**/characterize_2d_csvs/
+# Vim swap files
+*.swp
+# Backup files
+*.bak
+*.bak2
+*.bak3
+*.orig

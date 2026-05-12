@@ -1,0 +1,13 @@
+* Measure LELO_EX1
+.control
+
+load {cicname}.raw
+
+let gain = v(vout)/v(vin)
+
+echo "MEAS_START"
+plot db(gain) vs frequency
+plot cph(gain) vs frequency
+echo "MEAS_END"
+
+.endc

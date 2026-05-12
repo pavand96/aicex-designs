@@ -1,0 +1,8 @@
+.subckt LELO_EX1 VOUT VSS VDD VIN
+XM2 VOUT VIN VSS VSS sky130_fd_pr__nfet_01v8 L=0.8 W=60 nf=1 ad=17.4 as=17.4 pd=120.58 ps=120.58 nrd=0.00483333333333333
++ nrs=0.00483333333333333 sa=0 sb=0 sd=0 mult=1 m=1
+V1 net1 VOUT 0
+.save i(v1)
+R1 VDD net1 20000.0 m=1
+.ends
+.end

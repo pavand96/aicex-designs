@@ -1,0 +1,27 @@
+.title NMOS Saturation Region Characterization - W=40.0µm, L=0.8µm
+.include /home/pavand96/pro/aicex/ip/cnr_gr02_sky130nm/tech/sky130A/models/sky130.lib.spice tt
+
+* Device: W=40.0µm, L=0.8µm
+M1 vout vin gnd gnd sky130_fd_pr__nmos_01v8 W=40.0u L=0.8u
+
+* Load resistor (100k)
+RL vout vdd 100000.0
+
+* Supply
+Vdd vdd 0 DC 1.8
+
+* Input sweep
+Vin vin 0 DC 0
+
+* Analysis
+.dc Vin 0.5 1.2 0.05
+.control
+run
+set wr_singlescale
+set wr_vecnames
+option numdgt=7
+wrdata characterize_w40_l08_dc.txt v(vin) v(vout) i(Vdd)
+quit
+.endc
+
+.end

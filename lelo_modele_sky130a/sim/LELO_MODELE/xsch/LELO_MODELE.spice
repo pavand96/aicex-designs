@@ -1,0 +1,10 @@
+** sch_path: /home/pavand96/pro/aicex/ip/lelo_modele_sky130a/design/LELO_MODELE_SKY130A/LELO_MODELE.sch
+**.subckt LELO_MODELE VD VS VG VB
+*.ipin VD
+*.ipin VS
+*.ipin VG
+*.ipin VB
+XM2 VD VG VS VS sky130_fd_pr__nfet_01v8 L=0.8000 W=51.00 nf=1 ad=14.79 as=14.79 pd=102.58 ps=102.58 nrd=0.00568627450980392
++ nrs=0.00568627450980392 sa=0 sb=0 sd=0 mult=1 m=1
+**.ends
+.end

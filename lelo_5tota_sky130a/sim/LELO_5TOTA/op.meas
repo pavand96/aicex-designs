@@ -1,0 +1,14 @@
+* Measure LELO_EX1
+.control
+
+load {cicname}.raw
+
+echo "MEAS_START"
+print v(vin)
+print v(vout)
+print -i(vdd)
+print @xdut.xm2[vgs]
+print @xdut.xm2[vds]
+echo "MEAS_END"
+
+.endc

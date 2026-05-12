@@ -1,0 +1,11 @@
+*Simple NMOS device for parameter extraction
+*Single transistor with bias sources
+
+.param W_TEST = 1.0
+.param L_TEST = 0.15
+
+* NMOS device instance (will be populated with model via cicsim)
+* Source    Gate      Drain    Bulk
+Mn1 DRAIN   GATE      VSS      VSS  sky130_fd_pr__nfet_01v8 L={L_TEST} W={W_TEST} nf=1
+
+.end
