@@ -23,13 +23,13 @@ XMT    ntail  IBIAS  VSS    VSS  sky130_fd_pr__nfet_01v8 L=1 W=15 nf=3 m=1
 XM1    voutp1 VINP   ntail  VSS  sky130_fd_pr__nfet_01v8 L=0.5 W=150 nf=10 m=1
 XM2    voutn1 VINN   ntail  VSS  sky130_fd_pr__nfet_01v8 L=0.5 W=150 nf=10 m=1
 
-* ---- Stage-1 PMOS loads --------------------------------------------
-XM3    voutp1 pbias  VDD    VDD  sky130_fd_pr__pfet_01v8 L=1 W=30 nf=3 m=1
-XM4    voutn1 pbias  VDD    VDD  sky130_fd_pr__pfet_01v8 L=1 W=30 nf=3 m=1
+* ---- Stage-1 PMOS loads (long L for stable load current vs PVT) -----
+XM3    voutp1 pbias  VDD    VDD  sky130_fd_pr__pfet_01v8 L=2 W=60 nf=6 m=1
+XM4    voutn1 pbias  VDD    VDD  sky130_fd_pr__pfet_01v8 L=2 W=60 nf=6 m=1
 
-* ---- Stage-2 NMOS CS at bottom (gate = voutp1 ~ 0.77V) -------------
-XM5P   VOUTP  voutp1 VSS    VSS  sky130_fd_pr__nfet_01v8 L=0.5 W=80 nf=8 m=1
-XM5N   VOUTN  voutn1 VSS    VSS  sky130_fd_pr__nfet_01v8 L=0.5 W=80 nf=8 m=1
+* ---- Stage-2 NMOS CS at bottom (LVT, smaller W + longer L) --------
+XM5P   VOUTP  voutp1 VSS    VSS  sky130_fd_pr__nfet_01v8_lvt L=1 W=40 nf=4 m=1
+XM5N   VOUTN  voutn1 VSS    VSS  sky130_fd_pr__nfet_01v8_lvt L=1 W=40 nf=4 m=1
 
 * ---- Stage-2 PMOS sources at top (gate = VCTRL from CMFB) ----------
 XM6P   VOUTP  vctrl  VDD    VDD  sky130_fd_pr__pfet_01v8 L=0.5 W=80 nf=4 m=1
@@ -38,20 +38,20 @@ XM6N   VOUTN  vctrl  VDD    VDD  sky130_fd_pr__pfet_01v8 L=0.5 W=80 nf=4 m=1
 * ---- Miller compensation per side -----------------------------------
 * Rz > 1/gm5 (~700) for LHP zero. Cc set so GBW ~ 130 MHz.
 RZP    voutp1 nccp   1.5k
-CCP    nccp   VOUTP  4p
+CCP    nccp   VOUTP  2.5p
 RZN    voutn1 nccn   1.5k
-CCN    nccn   VOUTN  4p
+CCN    nccn   VOUTN  2.5p
 
-* ---- Choksi-Carley CMFB (50 uA tails) -------------------------------
-XQTP   stailp IBIAS  VSS    VSS  sky130_fd_pr__nfet_01v8 L=1 W=5 nf=1 m=1
-XQTN   stailn IBIAS  VSS    VSS  sky130_fd_pr__nfet_01v8 L=1 W=5 nf=1 m=1
-XQVOP  vd     VOUTP  stailp VSS  sky130_fd_pr__nfet_01v8 L=0.5 W=20 nf=1 m=1
-XQVCMP vctrl  VCMREF stailp VSS  sky130_fd_pr__nfet_01v8 L=0.5 W=20 nf=1 m=1
-XQVON  vd     VOUTN  stailn VSS  sky130_fd_pr__nfet_01v8 L=0.5 W=20 nf=1 m=1
-XQVCMN vctrl  VCMREF stailn VSS  sky130_fd_pr__nfet_01v8 L=0.5 W=20 nf=1 m=1
-XQDP   vd     vd     VDD    VDD  sky130_fd_pr__pfet_01v8 L=1 W=20 nf=1 m=1
-XQDN   vctrl  vd     VDD    VDD  sky130_fd_pr__pfet_01v8 L=1 W=20 nf=1 m=1
-CCMC   vctrl  VSS    1p
+* ---- Choksi-Carley CMFB (100 uA tails, moderate loop gain) ----------
+XQTP   stailp IBIAS  VSS    VSS  sky130_fd_pr__nfet_01v8 L=1 W=10 nf=1 m=1
+XQTN   stailn IBIAS  VSS    VSS  sky130_fd_pr__nfet_01v8 L=1 W=10 nf=1 m=1
+XQVOP  vd     VOUTP  stailp VSS  sky130_fd_pr__nfet_01v8 L=0.5 W=30 nf=1 m=1
+XQVCMP vctrl  VCMREF stailp VSS  sky130_fd_pr__nfet_01v8 L=0.5 W=30 nf=1 m=1
+XQVON  vd     VOUTN  stailn VSS  sky130_fd_pr__nfet_01v8 L=0.5 W=30 nf=1 m=1
+XQVCMN vctrl  VCMREF stailn VSS  sky130_fd_pr__nfet_01v8 L=0.5 W=30 nf=1 m=1
+XQDP   vd     vd     VDD    VDD  sky130_fd_pr__pfet_01v8 L=1 W=30 nf=1 m=1
+XQDN   vctrl  vd     VDD    VDD  sky130_fd_pr__pfet_01v8 L=1 W=30 nf=1 m=1
+CCMC   vctrl  VSS    2p
 
 * ---- Startup leak: 5 Mohm pull-down on voutp1/voutn1 -----------------
 * Eliminates dead equilibrium where stage-1 outputs latch high.
