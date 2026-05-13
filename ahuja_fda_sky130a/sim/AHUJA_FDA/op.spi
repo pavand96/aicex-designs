@@ -1,0 +1,117 @@
+*TB AHUJA_FDA — operating point (CMFB closed)
+.include ../../../work/xsch/AHUJA_FDA.spice
+.option TNOM=27 reltol=1e-4 abstol=1e-12 vntol=1e-7 noopiter gminsteps=20
+
+.param vcm = '{VCM}'
+
+VSS    VSS    0    dc 0
+VDD    VDD    0    dc {vdda}
+VVIP   VIP    0    dc {vcm}
+VVIN   VIN    0    dc {vcm}
+VVCM   VCM    0    dc {vcm}
+* IBIAS reference is now internal (RREF_N from VDD inside subckt)
+* External pin tied off (high-Z probe)
+RIBIAS_TIE IBIAS VSS 1G
+
+* Static nVcmfb driver disabled - internal transistor CMFB now drives nVcmfb
+RCMFB_PROBE nVcmfb 0 1G
+
+.ic v(xdut.ntail)=0.20 v(xdut.apos)=0.95 v(xdut.aneg)=0.95
+.ic v(xdut.bpos)=1.30  v(xdut.bneg)=1.30
+.ic v(vop)={vcm} v(von)={vcm} v(nvcmfb)=1.05
+.ic v(xdut.vbd)=0.95 v(xdut.vbc)=0.95 v(IBIAS)=0.85
+.ic v(xdut.vc1)=0.95 v(xdut.vc2)=1.05 v(xdut.stailp)=0.20 v(xdut.stailn)=0.20
+
+* Loads (CL=10 pF per spec)
+CLP    VOP    VSS  10p
+CLN    VON    VSS  10p
+
+.include ../xdut.spi
+
+.nodeset v(xdut.ntail)    = 0.15
+.nodeset v(xdut.aneg)     = 0.95
+.nodeset v(xdut.apos)     = 0.95
+.nodeset v(xdut.bneg)     = 1.30
+.nodeset v(xdut.bpos)     = 1.30
+.nodeset v(vop)           = {vcm}
+.nodeset v(von)           = {vcm}
+.nodeset v(xdut.vbd)      = 0.95
+.nodeset v(xdut.vbc)      = 0.95
+.nodeset v(IBIAS)         = 0.85
+.nodeset v(nvcmfb)        = 1.05
+.nodeset v(xdut.v_cms)    = {vcm}
+.nodeset v(xdut.n_diode)  = 0.55
+.nodeset v(xdut.stail_cm) = 1.50
+
+.save all
+
+.control
+set num_threads=8
+unset askquit
+set filetype=ascii
+
+* Pure op (ideal bias sources => deterministic)
+op
+
+echo "==== Node voltages ===="
+print v(xdut.ntail) v(xdut.aneg) v(xdut.apos) v(xdut.bneg) v(xdut.bpos) v(nVcmfb) v(vop) v(von) v(IBIAS) v(xdut.vbd) v(xdut.vbc)
+echo "==== Mi1 (NMOS input pair) ===="
+print @m.xdut.xmi1.msky130_fd_pr__nfet_01v8[gm] @m.xdut.xmi1.msky130_fd_pr__nfet_01v8[gds]
+print @m.xdut.xmi1.msky130_fd_pr__nfet_01v8[id] @m.xdut.xmi1.msky130_fd_pr__nfet_01v8[vgs]
+print @m.xdut.xmi1.msky130_fd_pr__nfet_01v8[vds] @m.xdut.xmi1.msky130_fd_pr__nfet_01v8[vth]
+
+echo "==== MC1 (PMOS cascode) ===="
+print @m.xdut.xmc1.msky130_fd_pr__pfet_01v8_lvt[gm] @m.xdut.xmc1.msky130_fd_pr__pfet_01v8_lvt[gds]
+print @m.xdut.xmc1.msky130_fd_pr__pfet_01v8_lvt[vds] @m.xdut.xmc1.msky130_fd_pr__pfet_01v8_lvt[vgs]
+
+echo "==== MD1 (PMOS top current src) ===="
+print @m.xdut.xmd1.msky130_fd_pr__pfet_01v8_lvt[gm] @m.xdut.xmd1.msky130_fd_pr__pfet_01v8_lvt[gds]
+print @m.xdut.xmd1.msky130_fd_pr__pfet_01v8_lvt[id] @m.xdut.xmd1.msky130_fd_pr__pfet_01v8_lvt[vds]
+print @m.xdut.xmd1.msky130_fd_pr__pfet_01v8_lvt[vgs]
+
+echo "==== ML+ (PMOS 2nd-stage CS) ===="
+print @m.xdut.xml_p.msky130_fd_pr__pfet_01v8_lvt[gm] @m.xdut.xml_p.msky130_fd_pr__pfet_01v8_lvt[gds]
+print @m.xdut.xml_p.msky130_fd_pr__pfet_01v8_lvt[id] @m.xdut.xml_p.msky130_fd_pr__pfet_01v8_lvt[vds]
+print @m.xdut.xml_p.msky130_fd_pr__pfet_01v8_lvt[vgs]
+
+echo "==== MU+ (NMOS 2nd-stage load) ===="
+print @m.xdut.xmu_p.msky130_fd_pr__nfet_01v8[gm] @m.xdut.xmu_p.msky130_fd_pr__nfet_01v8[gds]
+print @m.xdut.xmu_p.msky130_fd_pr__nfet_01v8[id] @m.xdut.xmu_p.msky130_fd_pr__nfet_01v8[vds]
+print @m.xdut.xmu_p.msky130_fd_pr__nfet_01v8[vgs]
+
+echo "==== Gain budget ===="
+let gm_in   = @m.xdut.xmi1.msky130_fd_pr__nfet_01v8[gm]
+let gm_mc   = @m.xdut.xmc1.msky130_fd_pr__pfet_01v8_lvt[gm]
+let gds_mc  = @m.xdut.xmc1.msky130_fd_pr__pfet_01v8_lvt[gds]
+let gds_md  = @m.xdut.xmd1.msky130_fd_pr__pfet_01v8_lvt[gds]
+let gds_mi  = @m.xdut.xmi1.msky130_fd_pr__nfet_01v8[gds]
+let gm_ml   = @m.xdut.xml_p.msky130_fd_pr__pfet_01v8_lvt[gm]
+let gds_ml  = @m.xdut.xml_p.msky130_fd_pr__pfet_01v8_lvt[gds]
+let gds_mu  = @m.xdut.xmu_p.msky130_fd_pr__nfet_01v8[gds]
+
+* Stage-1 output impedance at A: cascode (gm_mc/gds_mc) * (1/gds_md) || (1/gds_mi)
+let R_cas_dn = (gm_mc/gds_mc) * (1/gds_md)
+let R_cas_up = 1/gds_mi
+let Rout1    = R_cas_dn * R_cas_up / (R_cas_dn + R_cas_up)
+let Av1      = gm_in * Rout1
+
+* Stage-2 output impedance at VOP: ro_ML || ro_MU
+let Rout2    = 1/(gds_ml + gds_mu)
+let Av2      = gm_ml * Rout2
+let Avo      = Av1 * Av2
+let Avo_db   = 20*log10(abs(Avo))
+
+print gm_in gm_mc gm_ml
+print R_cas_dn R_cas_up Rout1
+print Rout2
+print Av1 Av2 Avo Avo_db
+
+* Total supply current
+let i_vdd = -i(vdd)
+let p_supply = i_vdd * v(vdd)
+print i_vdd p_supply
+
+write {cicname}.raw
+quit
+.endc
+.end

@@ -1,0 +1,71 @@
+Warning: Optran step size potentially too large.
+ERROR: (external)  no graphics interface;
+ please check if X-server is running,
+ or ngspice is compiled properly (see INSTALL)
+Warning: m=xx on .subckt line will override multiplier m hierarchy!
+
+Using KLU as Direct Linear Solver
+Note: Starting spice3 gmin stepping
+Note: spice3 gmin stepping completed
+******
+** ngspice-42 : Circuit level simulation program
+** Compiled with KLU Direct Linear Solver
+** The U. C. Berkeley CAD Group
+** Copyright 1985-1994, Regents of the University of California.
+** Copyright 2001-2023, The ngspice team.
+** Please get your ngspice manual from https://ngspice.sourceforge.io/docs.html
+** Please file your bug-reports at http://ngspice.sourceforge.net/bugrep.html
+** Creation Date: Sun Mar 31 20:15:14 UTC 2024
+******
+
+Note: Compatibility modes selected: hs a
+
+
+Circuit: *cicsimgen unity
+
+option SCALE: Scale is set to 1e-06 for instance and model parameters
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+ Reference value :  0.00000e+00Using KLU as Direct Linear Solver
+Note: Starting spice3 gmin stepping
+Note: spice3 gmin stepping completed
+
+No. of Data Rows : 1
+v(vop) = 9.402307e-01
+v(von) = 9.402307e-01
+v(nvcmfb) = 1.316971e+00
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+ Reference value :  2.47575e-06
+No. of Data Rows : 645
+tf30                =  5.435258e-07
+tf70                =  5.864409e-07
+tr30                =  1.533043e-06
+tr70                =  1.698854e-06
+vop_max             =  1.215155e+00 at=  2.005753e-06
+vop_min             =  5.926102e-01 at=  6.467160e-07
+von_max             =  1.236619e+00 at=  1.507773e-06
+von_min             =  6.497613e-01 at=  2.020753e-06
+vod_pos             =  5.532224e-01 from=  2.500000e-06 to=  2.900753e-06
+vod_neg             =  -5.972208e-01 from=  1.000000e-06 to=  1.401716e-06
+vod_set             =  5.525853e-01
+
+Error: measure  t_s99  when(WHEN) : out of interval
+Warning from checkvalid: vector t_s99 is not available or has zero length.
+ meas tran t_s99 when vod=0.99*vod_set rise=1 td=1.5u failed!
+
+==== Unity-gain results ====
+sr_pos = 5.066009e+06
+sr_neg = 5.592437e+06
+sr_avg = 5.329223e+06
+vop_max = 1.215155e+00
+vop_min = 5.926102e-01
+von_max = 1.236619e+00
+von_min = 6.497613e-01
+vod_pos = 5.532224e-01
+vod_neg = -5.97221e-01
+vocm_max_v = 9.634779e-01
+vocm_min_v = 8.741016e-01
+vod_max_v = 5.653862e-01
+vod_min_v = -6.16871e-01
+ngspice-42 done

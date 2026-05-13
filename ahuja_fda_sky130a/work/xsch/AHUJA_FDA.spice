@@ -1,0 +1,132 @@
+.subckt AHUJA_FDA VSS VDD VOP VON VIP VIN VCM IBIAS nVcmfb
+* =====================================================================
+* Two-Stage Fully-Differential Amplifier with Ahuja Cascoded Miller
+* Compensation. Polarity-flipped from Fig 7-2 (NMOS input pair at
+* bottom, PMOS cascoded current-source load at top) to fit VDD=1.8 V
+* with VCM=0.9 V.
+*
+* Spec: Avo=100 dB, UGF>5 MHz, PM>50°, SR>5 V/µs,
+*       CL=10 pF, Output swing=1 V, P<2 mW, VDD=1.8 V±5 %
+*
+* Stage 1: NMOS input pair (sources at ITAIL @ VSS) + PMOS cascoded
+*          current-source load (Md cascode'd by Mc). High-Z node A.
+* Stage 2: PMOS common-source (gate=A) + NMOS active load (CMFB).
+* Comp:    Cc from output to PMOS cascode SOURCE node B (Ahuja).
+*
+* Device flavor:
+*   * NMOS    : sky130_fd_pr__nfet_01v8       (Vth ≈ 0.6 V)
+*   * PMOS load/cascode : sky130_fd_pr__pfet_01v8_lvt (Vth ≈ 0.4 V).
+*     Standard pfet_01v8 has Vth ≈ 1.0 V, eating all stage-1 headroom
+*     in 1.8 V supply. LVT keeps the cascoded topology viable.
+*   * PMOS stage-2 CS  : sky130_fd_pr__pfet_01v8_lvt (same reason).
+*
+* Bias plan @ Itail = 200 µA:
+*   Mi  : 100 µA / branch  NMOS L=0.5
+*   Md  : 100 µA / branch  PMOS-LVT L=1
+*   Mc  : 100 µA / branch  PMOS-LVT L=1   (cascode)
+*   Ml  : 200 µA / branch  PMOS-LVT L=0.5 (stage-2 CS)
+*   Mu  : 200 µA / branch  NMOS L=1       (CMFB-controlled load)
+*   Total ≈ 610 µA → 1.10 mW < 2 mW spec.
+*
+* Headroom (typical):
+*   ntail ≈ 0.20 V
+*   APOS  ≈ 0.95 V          (Mc drain, Md drain via cascode)
+*   BPOS  ≈ 1.30 V          (Mc source, Md drain — Vsg_Md ≈ 0.5 V)
+*   VOP   ≈ 0.90 V (CMFB)
+* =====================================================================
+
+* ---- Bias references (diode-connected mirrors) ----
+* Reference current path Iref = 100uA each via resistor sized to drop
+* (VDD - Vgs_diode). Diode size MATCHES the mirroring transistor so
+* current ratio is 1:1 per branch (no W ratio scaling errors).
+*
+* Tail bias: NMOS diode @ 100uA -> mirror x2 to ITAIL (200uA total)
+XM_REF   IBIAS  IBIAS  VSS    VSS  sky130_fd_pr__nfet_01v8  L=1 W=10 nf=2 m=1
+RREF_N   VDD    IBIAS  10k
+XM_TAIL  ntail  IBIAS  VSS    VSS  sky130_fd_pr__nfet_01v8  L=1 W=20 nf=4 m=1
+
+* MD bias: PMOS-LVT diode @ 100uA, mirror x1 to MD1 and MD2 (100uA each)
+XMD_REF  VbD    VbD    VDD    VDD  sky130_fd_pr__pfet_01v8_lvt  L=1 W=20 nf=4 m=1
+RREF_PD  VbD    VSS    9.5k
+
+* MC bias: PMOS-LVT diode @ 100uA, sized smaller so Vsg larger (cascode strong)
+XMC_REF  VbC    VbC    VDD    VDD  sky130_fd_pr__pfet_01v8_lvt  L=1 W=8 nf=2 m=1
+RREF_PC  VbC    VSS    8k
+
+XMI1     APOS   VIP    ntail  VSS  sky130_fd_pr__nfet_01v8  L=2 W=40 nf=8 m=1
+XMI2     ANEG   VIN    ntail  VSS  sky130_fd_pr__nfet_01v8  L=2 W=40 nf=8 m=1
+
+XMC1     APOS   VbC    BPOS   VDD  sky130_fd_pr__pfet_01v8_lvt  L=1 W=20 nf=4 m=1
+XMC2     ANEG   VbC    BNEG   VDD  sky130_fd_pr__pfet_01v8_lvt  L=1 W=20 nf=4 m=1
+
+* PMOS top current source (LVT) L=1, W=20 nf=4: matches diode 1:1
+XMD1     BPOS   VbD    VDD    VDD  sky130_fd_pr__pfet_01v8_lvt  L=1 W=20 nf=4 m=1
+XMD2     BNEG   VbD    VDD    VDD  sky130_fd_pr__pfet_01v8_lvt  L=1 W=20 nf=4 m=1
+
+* ---- STAGE 2 -------------------------------------------------------
+* Stage 2: long L for high rds; W chosen for ~ 10-30uA at Vsg given by APOS.
+XML_P    VOP    APOS   VDD    VDD  sky130_fd_pr__pfet_01v8_lvt  L=8 W=80 nf=8 m=1
+XML_N    VON    ANEG   VDD    VDD  sky130_fd_pr__pfet_01v8_lvt  L=8 W=80 nf=8 m=1
+
+* NMOS load (CMFB) L=8 long.
+XMU_P    VOP    nVcmfb VSS    VSS  sky130_fd_pr__nfet_01v8  L=8 W=40 nf=4 m=1
+XMU_N    VON    nVcmfb VSS    VSS  sky130_fd_pr__nfet_01v8  L=8 W=40 nf=4 m=1
+
+* ---- AHUJA CASCODED MILLER -----------------------------------------
+* Cc to cascode SOURCE (B), not gate (A). Kills RHP zero.
+CC_P     VOP    BPOS   30p
+CC_N     VON    BNEG   30p
+
+* PM compensation: small caps on stage-1 high-Z node (APOS/ANEG) push
+* the pole at A down, making it the dominant pole. Combined with Ahuja
+* Cc, this should boost PM significantly without big GBW loss.
+CA_P     APOS   VSS    5p
+CA_N     ANEG   VSS    5p
+
+* =====================================================================
+* TRANSISTOR CMFB (resistive CM-sense + single-stage diff amp).
+*
+* Why this topology: Choksi-Carley two-pair CMFB has two stable DC
+* basins (high-Z output node), causing OP convergence to wrong basin.
+* Resistive averaging gives a unique linear sense -> deterministic OP.
+*
+* Operation:
+*   RSP, RSN form CM-sense node v_cms = (VOP + VON)/2 at DC.
+*   AC: equal R's, differential signal cancels at v_cms.
+*   v_cms vs VCM error fed into PMOS diff pair (PMOS so works at any VOP).
+*   diff-pair drain pulled by NMOS diode/mirror -> single integrating
+*   output node (nVcmfb).
+*
+* Polarity:
+*   V_OCM up -> v_cms up -> Q_CMS Vsg shrinks -> I_CMS down -> tail-
+*   shared Q_REF current up -> NMOS mirror at nVcmfb pulls more ->
+*   wait, this is wrong polarity (would pull nVcmfb down).
+*   So: tap the OTHER drain - put nVcmfb on the Q_CMS side.
+*   V_OCM up -> I_CMS down -> drain of Q_CMS pulled UP (less current
+*   into NMOS load) -> nVcmfb RISES -> MU sinks more -> V_OCM falls. OK
+* =====================================================================
+
+* CM-sense averaging resistors (1MEG each, neglig. loading on VOP/VON)
+RSP    VOP    v_cms  1MEG
+RSN    VON    v_cms  1MEG
+
+* Polarity reasoning (NEGATIVE feedback target: V_OCM up -> nVcmfb up):
+*   v_cms ↑ -> Q_CMS_S (gate=v_cms) Vsg shrinks -> I_DIODE side ↓ ->
+*   NMOS diode Vgs ↓ -> NMOS mirror gate ↓ -> mirror sinks LESS at output ->
+*   Q_REF_S (gate=VCM, fixed I) sources constant into output node ->
+*   net charge into output → nVcmfb RISES.  ✓
+* PMOS top tail (50uA, biased from VbD diode)
+XQT_CM stail_cm VbD  VDD    VDD  sky130_fd_pr__pfet_01v8_lvt  L=1 W=10 nf=2 m=1
+
+* PMOS diff pair: SENSE on diode-side gate, REF on output-side gate
+XQ_CMS n_diode v_cms stail_cm VDD  sky130_fd_pr__pfet_01v8_lvt  L=0.5 W=20 nf=2 m=1
+XQ_REF nVcmfb  VCM   stail_cm VDD  sky130_fd_pr__pfet_01v8_lvt  L=0.5 W=20 nf=2 m=1
+
+* NMOS load: diode at n_diode (sense side), mirror at nVcmfb (output side)
+XQL_REF n_diode n_diode VSS    VSS  sky130_fd_pr__nfet_01v8  L=1 W=10 nf=1 m=1
+XQL_CMS nVcmfb  n_diode VSS    VSS  sky130_fd_pr__nfet_01v8  L=1 W=10 nf=1 m=1
+
+* Slow-CMFB compensation cap at output node
+CCMC   nVcmfb VSS    2p
+
+.ends

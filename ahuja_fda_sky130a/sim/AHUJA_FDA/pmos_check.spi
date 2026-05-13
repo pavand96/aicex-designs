@@ -1,0 +1,23 @@
+* Standalone PMOS check
+.option SEED=1
+.param mc_mm_switch=0
+.param mc_pr_switch=0
+.include "/opt/pdk/share/pdk/sky130A/libs.ref/sky130_fd_pr/spice/sky130_fd_pr__pfet_01v8_lvt__tt.corner.spice"
+.include "/opt/pdk/share/pdk/sky130A/libs.ref/sky130_fd_pr/spice/sky130_fd_pr__pfet_01v8_lvt__mismatch.corner.spice"
+.include "/opt/pdk/share/pdk/sky130A/libs.tech/ngspice/all.spice"
+
+VDD VDD 0 dc 1.8
+VG  VG  0 dc 0.9
+VD  VD  0 dc 0.9
+
+XM VD VG VDD VDD sky130_fd_pr__pfet_01v8_lvt L=0.5 W=8 nf=4 m=1
+
+.control
+op
+print v(VDD) v(VG) v(VD)
+print @m.xm.msky130_fd_pr__pfet_01v8_lvt[id] @m.xm.msky130_fd_pr__pfet_01v8_lvt[gm]
+print @m.xm.msky130_fd_pr__pfet_01v8_lvt[vth] @m.xm.msky130_fd_pr__pfet_01v8_lvt[vgs]
+print @m.xm.msky130_fd_pr__pfet_01v8_lvt[vds]
+quit
+.endc
+.end

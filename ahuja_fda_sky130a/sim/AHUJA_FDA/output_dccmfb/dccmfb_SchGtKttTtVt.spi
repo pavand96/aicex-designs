@@ -1,0 +1,66 @@
+*cicsimgen dccmfb
+
+.option SEED=1
+
+*Nothing here
+
+.param mc_mm_switch=0
+.param mc_pr_switch=0
+.include "/opt/pdk/share/pdk/sky130A/libs.ref/sky130_fd_pr/spice/sky130_fd_pr__nfet_01v8__tt.pm3.spice"
+.include "/opt/pdk/share/pdk/sky130A/libs.ref/sky130_fd_pr/spice/sky130_fd_pr__nfet_01v8__mismatch.corner.spice"
+.include "/opt/pdk/share/pdk/sky130A/libs.ref/sky130_fd_pr/spice/sky130_fd_pr__nfet_01v8_lvt__tt.corner.spice"
+.include "/opt/pdk/share/pdk/sky130A/libs.ref/sky130_fd_pr/spice/sky130_fd_pr__nfet_01v8_lvt__mismatch.corner.spice"
+.include "/opt/pdk/share/pdk/sky130A/libs.ref/sky130_fd_pr/spice/sky130_fd_pr__pfet_01v8__tt.corner.spice"
+.include "/opt/pdk/share/pdk/sky130A/libs.ref/sky130_fd_pr/spice/sky130_fd_pr__pfet_01v8__mismatch.corner.spice"
+.include "/opt/pdk/share/pdk/sky130A/libs.ref/sky130_fd_pr/spice/sky130_fd_pr__pfet_01v8_lvt__tt.corner.spice"
+.include "/opt/pdk/share/pdk/sky130A/libs.ref/sky130_fd_pr/spice/sky130_fd_pr__pfet_01v8_lvt__mismatch.corner.spice"
+.include "/opt/pdk/share/pdk/sky130A/libs.tech/ngspice/corners/tt/nonfet.spice"
+.include "/opt/pdk/share/pdk/sky130A/libs.ref/sky130_fd_pr/spice/sky130_fd_pr__npn_05v5__t.corner.spice"
+.include "/opt/pdk/share/pdk/sky130A/libs.tech/ngspice/all.spice"
+.include "/opt/pdk/share/pdk/sky130A/libs.tech/ngspice/r+c/res_typical__cap_typical.spice"
+.include "/opt/pdk/share/pdk/sky130A/libs.tech/ngspice/r+c/res_typical__cap_typical__lin.spice"
+.include "/opt/pdk/share/pdk/sky130A/libs.tech/ngspice/corners/tt/specialized_cells.spice"
+
+.lib "../../../tech/ngspice/temperature.spi" Tt
+
+.lib "../../../tech/ngspice/supply.spi" Vt
+
+*TB AHUJA_FDA — DC sweep nVcmfb to find quiescent point
+.include ../../../work/xsch/AHUJA_FDA.spice
+.option TNOM=27 reltol=1e-4 abstol=1e-12 vntol=1e-7
+
+.param vcm = '0.9'
+
+VSS    VSS    0    dc 0
+VDD    VDD    0    dc {vdda}
+VVIP   VIP    0    dc {vcm}
+VVIN   VIN    0    dc {vcm}
+VVCM   VCM    0    dc {vcm}
+* IBIAS not used by current netlist; tie to VSS via a 1G to avoid floating port
+RIBDUM IBIAS  VSS  1G
+
+VVCMFB nVcmfb 0   dc 0.6
+
+CLP    VOP    VSS  10p
+CLN    VON    VSS  10p
+
+.include ../xdut.spi
+
+.save all
+
+.control
+set num_threads=8
+unset askquit
+set filetype=ascii
+
+dc VVCMFB 0.5 1.6 0.025
+let vocm = (v(VOP)+v(VON))/2
+
+echo "==== nVcmfb sweep ===="
+print v(v-sweep) v(VOP) v(VON) vocm v(xdut.apos) v(xdut.bpos) v(xdut.ntail)
+
+write dccmfb_SchGtKttTtVt.raw
+quit
+.endc
+.end
+

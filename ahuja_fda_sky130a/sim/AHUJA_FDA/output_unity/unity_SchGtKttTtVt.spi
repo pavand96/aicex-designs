@@ -1,0 +1,141 @@
+*cicsimgen unity
+
+.option SEED=1
+
+*Nothing here
+
+.param mc_mm_switch=0
+.param mc_pr_switch=0
+.include "/opt/pdk/share/pdk/sky130A/libs.ref/sky130_fd_pr/spice/sky130_fd_pr__nfet_01v8__tt.pm3.spice"
+.include "/opt/pdk/share/pdk/sky130A/libs.ref/sky130_fd_pr/spice/sky130_fd_pr__nfet_01v8__mismatch.corner.spice"
+.include "/opt/pdk/share/pdk/sky130A/libs.ref/sky130_fd_pr/spice/sky130_fd_pr__nfet_01v8_lvt__tt.corner.spice"
+.include "/opt/pdk/share/pdk/sky130A/libs.ref/sky130_fd_pr/spice/sky130_fd_pr__nfet_01v8_lvt__mismatch.corner.spice"
+.include "/opt/pdk/share/pdk/sky130A/libs.ref/sky130_fd_pr/spice/sky130_fd_pr__pfet_01v8__tt.corner.spice"
+.include "/opt/pdk/share/pdk/sky130A/libs.ref/sky130_fd_pr/spice/sky130_fd_pr__pfet_01v8__mismatch.corner.spice"
+.include "/opt/pdk/share/pdk/sky130A/libs.ref/sky130_fd_pr/spice/sky130_fd_pr__pfet_01v8_lvt__tt.corner.spice"
+.include "/opt/pdk/share/pdk/sky130A/libs.ref/sky130_fd_pr/spice/sky130_fd_pr__pfet_01v8_lvt__mismatch.corner.spice"
+.include "/opt/pdk/share/pdk/sky130A/libs.tech/ngspice/corners/tt/nonfet.spice"
+.include "/opt/pdk/share/pdk/sky130A/libs.ref/sky130_fd_pr/spice/sky130_fd_pr__npn_05v5__t.corner.spice"
+.include "/opt/pdk/share/pdk/sky130A/libs.tech/ngspice/all.spice"
+.include "/opt/pdk/share/pdk/sky130A/libs.tech/ngspice/r+c/res_typical__cap_typical.spice"
+.include "/opt/pdk/share/pdk/sky130A/libs.tech/ngspice/r+c/res_typical__cap_typical__lin.spice"
+.include "/opt/pdk/share/pdk/sky130A/libs.tech/ngspice/corners/tt/specialized_cells.spice"
+
+.lib "../../../tech/ngspice/temperature.spi" Tt
+
+.lib "../../../tech/ngspice/supply.spi" Vt
+
+*TB AHUJA_FDA — closed-loop unity-gain (R1=Rf=10k) for SR & swing
+.include ../../../work/xsch/AHUJA_FDA.spice
+.option TNOM=27 reltol=1e-4 abstol=1e-12 vntol=1e-7 noopiter gminsteps=20 itl1=300 itl4=200
+
+.param vcm   = '0.9'
+.param vamp  = 0.5    $ differential half-step => vid = +/- 1V step
+.param tr    = 0.1n
+.param tper  = 2u
+.param tper2 = '2*tper'
+
+VSS    VSS    0    dc 0
+VDD    VDD    0    dc {vdda}
+VVCM   VCM    0    dc {vcm}
+
+* Symmetric differential step via PWL: vid 0 -> +0.6 -> -0.6 (vod 0 -> -0.6 -> +0.6)
+VINP   srcp   VCM  pwl(0 0  0.499u 0  0.5u 0.3   1.499u 0.3   1.5u -0.3   3u -0.3)
+VINN   srcn   VCM  pwl(0 0  0.499u 0  0.5u -0.3  1.499u -0.3  1.5u 0.3    3u 0.3)
+
+* 4R unity-gain inverting feedback (R1 = Rf = 10k)
+R1P    srcp   VIN  10k
+RFP    VOP    VIN  10k
+R1N    srcn   VIP  10k
+RFN    VON    VIP  10k
+
+RIBIAS_TIE  IBIAS    VSS 1G
+RCMFB_PROBE nVcmfb   0   1G
+
+CLP    VOP    VSS  10p
+CLN    VON    VSS  10p
+
+.include ../xdut.spi
+
+* Strong .ic for tran-uic startup
+.ic v(vop)={vcm} v(von)={vcm} v(nvcmfb)=0.93
+.ic v(vin)={vcm} v(vip)={vcm}
+.ic v(srcp)={vcm} v(srcn)={vcm}
+.ic v(xdut.ntail)=0.15 v(xdut.apos)=0.78 v(xdut.aneg)=0.78
+.ic v(xdut.bpos)=1.59  v(xdut.bneg)=1.59
+.ic v(xdut.vbd)=0.93   v(xdut.vbc)=0.73 v(IBIAS)=0.86
+.ic v(xdut.v_cms)={vcm} v(xdut.n_diode)=0.55 v(xdut.stail_cm)=1.50
+
+.nodeset v(xdut.ntail)    = 0.15
+.nodeset v(xdut.aneg)     = 0.78
+.nodeset v(xdut.apos)     = 0.78
+.nodeset v(xdut.bneg)     = 1.59
+.nodeset v(xdut.bpos)     = 1.59
+.nodeset v(vop)           = {vcm}
+.nodeset v(von)           = {vcm}
+.nodeset v(xdut.vbd)      = 0.93
+.nodeset v(xdut.vbc)      = 0.73
+.nodeset v(IBIAS)         = 0.86
+.nodeset v(nvcmfb)        = 0.93
+.nodeset v(xdut.v_cms)    = {vcm}
+.nodeset v(xdut.n_diode)  = 0.55
+.nodeset v(xdut.stail_cm) = 1.50
+
+.save v(vop) v(von) v(srcp) v(srcn) v(nvcmfb)
+
+.control
+set num_threads=8
+unset askquit
+set filetype=ascii
+
+op
+print v(vop) v(von) v(nvcmfb)
+
+save all
+* Tran with reasonable max step
+tran 2n 3u 0 5n
+
+let vod    = v(vop) - v(von)
+let vid    = v(srcp) - v(srcn)
+let vocm   = 0.5*(v(vop) + v(von))
+
+* vod waveform: 0 (t<0.5u), -0.6V nom (0.5u<t<1.5u), +0.6V nom (1.5u<t<3u)
+meas tran tf30 when vod=-0.18 fall=1 td=400n
+meas tran tf70 when vod=-0.42 fall=1 td=400n
+let sr_neg = abs(0.24 / (tf70 - tf30))
+
+meas tran tr30 when vod=-0.42 rise=1 td=1.4u
+meas tran tr70 when vod=0.42  rise=1 td=1.4u
+let sr_pos = abs(0.84 / (tr70 - tr30))
+
+let sr_avg = 0.5*(sr_pos + sr_neg)
+
+* --- Output swing (raw min/max during transient) ---
+meas tran vop_max max v(vop) from=400n to=2.9u
+meas tran vop_min min v(vop) from=400n to=2.9u
+meas tran von_max max v(von) from=400n to=2.9u
+meas tran von_min min v(von) from=400n to=2.9u
+meas tran vod_pos avg vod from=2.5u to=2.9u
+meas tran vod_neg avg vod from=1.0u to=1.4u
+
+* --- 1% settling: time after rising edge for vod to enter 99% of final ---
+* Use a small fraction of measured final value
+meas tran vod_set find vod when time=2.9u
+meas tran t_s99 when vod='0.99*vod_set' rise=1 td=1.5u
+
+echo "==== Unity-gain results ===="
+print sr_pos sr_neg sr_avg
+print vop_max vop_min von_max von_min
+print vod_pos vod_neg
+print t_s99
+
+let vocm_max_v = vecmax(vocm)
+let vocm_min_v = vecmin(vocm)
+let vod_max_v  = vecmax(vod)
+let vod_min_v  = vecmin(vod)
+print vocm_max_v vocm_min_v vod_max_v vod_min_v
+
+quit
+.endc
+.end
+

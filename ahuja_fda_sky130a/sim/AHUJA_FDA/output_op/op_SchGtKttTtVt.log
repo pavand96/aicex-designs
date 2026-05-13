@@ -1,0 +1,102 @@
+Warning: Optran step size potentially too large.
+ERROR: (external)  no graphics interface;
+ please check if X-server is running,
+ or ngspice is compiled properly (see INSTALL)
+Warning: m=xx on .subckt line will override multiplier m hierarchy!
+
+Warning : IC on non-existent node - xdut.vc1, ignored
+   Please check line .ic v(xdut.vc1)=0.95 v(xdut.vc2)=1.05 v(xdut.stailp)=0.20 v(xdut.stailn)=0.20
+
+Warning : IC on non-existent node - xdut.vc2, ignored
+   Please check line .ic v(xdut.vc1)=0.95 v(xdut.vc2)=1.05 v(xdut.stailp)=0.20 v(xdut.stailn)=0.20
+
+Warning : IC on non-existent node - xdut.stailp, ignored
+   Please check line .ic v(xdut.vc1)=0.95 v(xdut.vc2)=1.05 v(xdut.stailp)=0.20 v(xdut.stailn)=0.20
+
+Warning : IC on non-existent node - xdut.stailn, ignored
+   Please check line .ic v(xdut.vc1)=0.95 v(xdut.vc2)=1.05 v(xdut.stailp)=0.20 v(xdut.stailn)=0.20
+
+Using KLU as Direct Linear Solver
+Note: Starting spice3 gmin stepping
+Warning: spice3 gmin stepping failed
+Note: Transient op started
+Note: Transient op finished successfully
+******
+** ngspice-42 : Circuit level simulation program
+** Compiled with KLU Direct Linear Solver
+** The U. C. Berkeley CAD Group
+** Copyright 1985-1994, Regents of the University of California.
+** Copyright 2001-2023, The ngspice team.
+** Please get your ngspice manual from https://ngspice.sourceforge.io/docs.html
+** Please file your bug-reports at http://ngspice.sourceforge.net/bugrep.html
+** Creation Date: Sun Mar 31 20:15:14 UTC 2024
+******
+
+Note: Compatibility modes selected: hs a
+
+
+Circuit: *cicsimgen op
+
+option SCALE: Scale is set to 1e-06 for instance and model parameters
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+ Reference value :  0.00000e+00
+No. of Data Rows : 1
+==== Node voltages ====
+v(xdut.ntail) = 1.460278e-01
+v(xdut.aneg) = 5.730592e-01
+v(xdut.apos) = 5.730592e-01
+v(xdut.bneg) = 1.593350e+00
+v(xdut.bpos) = 1.593350e+00
+v(nvcmfb) = 9.338063e-01
+v(vop) = 7.752855e-01
+v(von) = 7.752855e-01
+v(ibias) = 8.584546e-01
+v(xdut.vbd) = 9.260096e-01
+v(xdut.vbc) = 7.344878e-01
+==== Mi1 (NMOS input pair) ====
+@m.xdut.xmi1.msky130_fd_pr__nfet_01v8[gm] = 8.130247e-04
+@m.xdut.xmi1.msky130_fd_pr__nfet_01v8[gds] = 6.558938e-06
+@m.xdut.xmi1.msky130_fd_pr__nfet_01v8[id] = 6.998064e-05
+@m.xdut.xmi1.msky130_fd_pr__nfet_01v8[vgs] = 7.539722e-01
+@m.xdut.xmi1.msky130_fd_pr__nfet_01v8[vds] = 4.270313e-01
+@m.xdut.xmi1.msky130_fd_pr__nfet_01v8[vth] = 5.864473e-01
+==== MC1 (PMOS cascode) ====
+@m.xdut.xmc1.msky130_fd_pr__pfet_01v8_lvt[gm] = 4.362839e-04
+@m.xdut.xmc1.msky130_fd_pr__pfet_01v8_lvt[gds] = 6.946648e-06
+@m.xdut.xmc1.msky130_fd_pr__pfet_01v8_lvt[vds] = 1.020291e+00
+@m.xdut.xmc1.msky130_fd_pr__pfet_01v8_lvt[vgs] = 8.588622e-01
+==== MD1 (PMOS top current src) ====
+@m.xdut.xmd1.msky130_fd_pr__pfet_01v8_lvt[gm] = 2.747126e-04
+@m.xdut.xmd1.msky130_fd_pr__pfet_01v8_lvt[gds] = 1.986503e-04
+@m.xdut.xmd1.msky130_fd_pr__pfet_01v8_lvt[id] = 6.775304e-05
+@m.xdut.xmd1.msky130_fd_pr__pfet_01v8_lvt[vds] = 2.066500e-01
+@m.xdut.xmd1.msky130_fd_pr__pfet_01v8_lvt[vgs] = 8.739904e-01
+==== ML+ (PMOS 2nd-stage CS) ====
+@m.xdut.xml_p.msky130_fd_pr__pfet_01v8_lvt[gm] = 5.014627e-04
+@m.xdut.xml_p.msky130_fd_pr__pfet_01v8_lvt[gds] = 1.402943e-06
+@m.xdut.xml_p.msky130_fd_pr__pfet_01v8_lvt[id] = 1.595062e-04
+@m.xdut.xml_p.msky130_fd_pr__pfet_01v8_lvt[vds] = 1.024715e+00
+@m.xdut.xml_p.msky130_fd_pr__pfet_01v8_lvt[vgs] = 1.226941e+00
+==== MU+ (NMOS 2nd-stage load) ====
+@m.xdut.xmu_p.msky130_fd_pr__nfet_01v8[gm] = 4.557471e-04
+@m.xdut.xmu_p.msky130_fd_pr__nfet_01v8[gds] = 1.668848e-06
+@m.xdut.xmu_p.msky130_fd_pr__nfet_01v8[id] = 9.774154e-05
+@m.xdut.xmu_p.msky130_fd_pr__nfet_01v8[vds] = 7.752855e-01
+@m.xdut.xmu_p.msky130_fd_pr__nfet_01v8[vgs] = 9.338063e-01
+==== Gain budget ====
+gm_in = 8.130247e-04
+gm_mc = 4.362839e-04
+gm_ml = 5.014627e-04
+r_cas_dn = 3.161584e+05
+r_cas_up = 1.524637e+05
+rout1 = 1.028605e+05
+rout2 = 3.255430e+05
+av1 = 8.362809e+01
+av2 = 1.632476e+02
+avo = 1.365209e+04
+avo_db = 8.270398e+01
+i_vdd = 7.736752e-04
+p_supply = 1.392615e-03
+ASCII raw file "op_SchGtKttTtVt.raw"
+ngspice-42 done

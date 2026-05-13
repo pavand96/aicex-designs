@@ -1,0 +1,270 @@
+Warning: Optran step size potentially too large.
+Warning: m=xx on .subckt line will override multiplier m hierarchy!
+
+Using KLU as Direct Linear Solver
+Note: Transient op started
+Note: Transient op finished successfully
+******
+** ngspice-42 : Circuit level simulation program
+** Compiled with KLU Direct Linear Solver
+** The U. C. Berkeley CAD Group
+** Copyright 1985-1994, Regents of the University of California.
+** Copyright 2001-2023, The ngspice team.
+** Please get your ngspice manual from https://ngspice.sourceforge.io/docs.html
+** Please file your bug-reports at http://ngspice.sourceforge.net/bugrep.html
+** Creation Date: Sun Mar 31 20:15:14 UTC 2024
+******
+
+Note: Compatibility modes selected: hs a
+
+
+Circuit: *cicsimgen dccmfb
+
+option SCALE: Scale is set to 1e-06 for instance and model parameters
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+ Reference value :  5.00000e-01Note: Transient op started
+Note: Transient op finished successfully
+Note: Transient op started
+Note: Transient op finished successfully
+Note: Transient op started
+Note: Transient op finished successfully
+Note: Transient op started
+Note: Transient op finished successfully
+Note: Transient op started
+Note: Transient op finished successfully
+Note: Transient op started
+Note: Transient op finished successfully
+Note: Transient op started
+Note: Transient op finished successfully
+Note: Transient op started
+Note: Transient op finished successfully
+Note: Transient op started
+Note: Transient op finished successfully
+Note: Transient op started
+Note: Transient op finished successfully
+Note: Transient op started
+Note: Transient op finished successfully
+Note: Transient op started
+Note: Transient op finished successfully
+Note: Transient op started
+Note: Transient op finished successfully
+Note: Transient op started
+Note: Transient op finished successfully
+Note: Transient op started
+Note: Transient op finished successfully
+Note: Transient op started
+Note: Transient op finished successfully
+Note: Transient op started
+Note: Transient op finished successfully
+Note: Transient op started
+Note: Transient op finished successfully
+Note: Transient op started
+Note: Transient op finished successfully
+Note: Transient op started
+Note: Transient op finished successfully
+Note: Transient op started
+Note: Transient op finished successfully
+Note: Transient op started
+Note: Transient op finished successfully
+Note: Transient op started
+Note: Transient op finished successfully
+Note: Transient op started
+Note: Transient op finished successfully
+Note: Transient op started
+Note: Transient op finished successfully
+Note: Transient op started
+Note: Transient op finished successfully
+Note: Transient op started
+Note: Transient op finished successfully
+Note: Transient op started
+Note: Transient op finished successfully
+Note: Transient op started
+Note: Transient op finished successfully
+Note: Transient op started
+Note: Transient op finished successfully
+Note: Transient op started
+Note: Transient op finished successfully
+Note: Transient op started
+Note: Transient op finished successfully
+Note: Transient op started
+Note: Transient op finished successfully
+Note: Transient op started
+Note: Transient op finished successfully
+ Reference value :  1.35000e+00Note: Transient op started
+Note: Transient op finished successfully
+Note: Transient op started
+Note: Transient op finished successfully
+Note: Transient op started
+Note: Transient op finished successfully
+Note: Transient op started
+Note: Transient op finished successfully
+Note: Transient op started
+Note: Transient op finished successfully
+Note: Transient op started
+Note: Transient op finished successfully
+Note: Transient op started
+Note: Transient op finished successfully
+Note: Transient op started
+Note: Transient op finished successfully
+Note: Transient op started
+Note: Transient op finished successfully
+Note: Transient op started
+Note: Transient op finished successfully
+
+No. of Data Rows : 45
+==== nVcmfb sweep ====
+                               *cicsimgen dccmfb
+                               DC transfer characteristic  Wed May 13 01:01:03  2026
+--------------------------------------------------------------------------------
+Index   v-sweep         v(v-sweep)      v(vop)          v(von)          
+--------------------------------------------------------------------------------
+0	5.000000e-01	5.000000e-01	3.296382e-01	3.296382e-01	
+1	5.250000e-01	5.250000e-01	8.630590e-01	8.630590e-01	
+2	5.500000e-01	5.500000e-01	1.251896e+00	1.251896e+00	
+3	5.750000e-01	5.750000e-01	1.479810e+00	1.479810e+00	
+4	6.000000e-01	6.000000e-01	1.555080e+00	1.555080e+00	
+5	6.250000e-01	6.250000e-01	1.550283e+00	1.550283e+00	
+6	6.500000e-01	6.500000e-01	1.547955e+00	1.547955e+00	
+7	6.750000e-01	6.750000e-01	1.548250e+00	1.548250e+00	
+8	7.000000e-01	7.000000e-01	1.551377e+00	1.551377e+00	
+9	7.250000e-01	7.250000e-01	1.557380e+00	1.557380e+00	
+10	7.500000e-01	7.500000e-01	1.566063e+00	1.566063e+00	
+11	7.750000e-01	7.750000e-01	1.576948e+00	1.576948e+00	
+12	8.000000e-01	8.000000e-01	1.589317e+00	1.589317e+00	
+13	8.250000e-01	8.250000e-01	1.602403e+00	1.602403e+00	
+14	8.500000e-01	8.500000e-01	1.615594e+00	1.615594e+00	
+15	8.750000e-01	8.750000e-01	1.628548e+00	1.628548e+00	
+16	9.000000e-01	9.000000e-01	1.641141e+00	1.641141e+00	
+17	9.250000e-01	9.250000e-01	1.653352e+00	1.653352e+00	
+18	9.500000e-01	9.500000e-01	1.665156e+00	1.665156e+00	
+19	9.750000e-01	9.750000e-01	1.676462e+00	1.676462e+00	
+20	1.000000e+00	1.000000e+00	1.687093e+00	1.687093e+00	
+21	1.025000e+00	1.025000e+00	1.696762e+00	1.696762e+00	
+22	1.050000e+00	1.050000e+00	1.704867e+00	1.704867e+00	
+23	1.075000e+00	1.075000e+00	1.710627e+00	1.710627e+00	
+24	1.100000e+00	1.100000e+00	1.714156e+00	1.714156e+00	
+25	1.125000e+00	1.125000e+00	1.715917e+00	1.715917e+00	
+26	1.150000e+00	1.150000e+00	1.716133e+00	1.716133e+00	
+27	1.175000e+00	1.175000e+00	1.714792e+00	1.714792e+00	
+28	1.200000e+00	1.200000e+00	1.711783e+00	1.711783e+00	
+29	1.225000e+00	1.225000e+00	1.707263e+00	1.707263e+00	
+30	1.250000e+00	1.250000e+00	1.701930e+00	1.701930e+00	
+31	1.275000e+00	1.275000e+00	1.695958e+00	1.695958e+00	
+32	1.300000e+00	1.300000e+00	1.689493e+00	1.689493e+00	
+33	1.325000e+00	1.325000e+00	1.682640e+00	1.682640e+00	
+34	1.350000e+00	1.350000e+00	1.675466e+00	1.675466e+00	
+35	1.375000e+00	1.375000e+00	1.668015e+00	1.668015e+00	
+36	1.400000e+00	1.400000e+00	1.660322e+00	1.660322e+00	
+37	1.425000e+00	1.425000e+00	1.652410e+00	1.652410e+00	
+38	1.450000e+00	1.450000e+00	1.644299e+00	1.644299e+00	
+39	1.475000e+00	1.475000e+00	1.636006e+00	1.636006e+00	
+40	1.500000e+00	1.500000e+00	1.627543e+00	1.627543e+00	
+41	1.525000e+00	1.525000e+00	1.618922e+00	1.618922e+00	
+42	1.550000e+00	1.550000e+00	1.610152e+00	1.610152e+00	
+43	1.575000e+00	1.575000e+00	1.601241e+00	1.601241e+00	
+44	1.600000e+00	1.600000e+00	1.592198e+00	1.592198e+00	
+
+                               *cicsimgen dccmfb
+                               DC transfer characteristic  Wed May 13 01:01:03  2026
+--------------------------------------------------------------------------------
+Index   v-sweep         vocm            v(xdut.apos)    v(xdut.bpos)    
+--------------------------------------------------------------------------------
+0	5.000000e-01	3.296382e-01	-5.41276e-01	3.922174e-01	
+1	5.250000e-01	8.630590e-01	-7.45504e-01	9.843616e-01	
+2	5.500000e-01	1.251896e+00	-6.97199e-01	1.402314e+00	
+3	5.750000e-01	1.479810e+00	-1.88009e-01	1.574991e+00	
+4	6.000000e-01	1.555080e+00	1.282014e+00	1.568442e+00	
+5	6.250000e-01	1.550283e+00	1.274997e+00	1.536184e+00	
+6	6.500000e-01	1.547955e+00	1.220612e+00	1.512803e+00	
+7	6.750000e-01	1.548250e+00	1.166829e+00	1.493635e+00	
+8	7.000000e-01	1.551377e+00	1.113470e+00	1.478461e+00	
+9	7.250000e-01	1.557380e+00	1.060815e+00	1.466983e+00	
+10	7.500000e-01	1.566063e+00	1.009812e+00	1.458729e+00	
+11	7.750000e-01	1.576948e+00	9.617328e-01	1.453009e+00	
+12	8.000000e-01	1.589317e+00	9.170458e-01	1.448985e+00	
+13	8.250000e-01	1.602403e+00	8.743586e-01	1.445864e+00	
+14	8.500000e-01	1.615594e+00	8.306415e-01	1.443086e+00	
+15	8.750000e-01	1.628548e+00	7.824480e-01	1.440385e+00	
+16	9.000000e-01	1.641141e+00	7.270063e-01	1.437703e+00	
+17	9.250000e-01	1.653352e+00	6.625199e-01	1.435065e+00	
+18	9.500000e-01	1.665156e+00	5.878503e-01	1.432469e+00	
+19	9.750000e-01	1.676462e+00	5.019960e-01	1.429854e+00	
+20	1.000000e+00	1.687093e+00	4.038813e-01	1.427095e+00	
+21	1.025000e+00	1.696762e+00	2.949521e-01	1.424000e+00	
+22	1.050000e+00	1.704867e+00	1.922160e-01	1.420181e+00	
+23	1.075000e+00	1.710627e+00	9.751537e-02	1.415271e+00	
+24	1.100000e+00	1.714156e+00	-7.41674e-03	1.409710e+00	
+25	1.125000e+00	1.715917e+00	-1.28465e-01	1.404026e+00	
+26	1.150000e+00	1.716133e+00	-2.65064e-01	1.398384e+00	
+27	1.175000e+00	1.714792e+00	-4.15651e-01	1.392711e+00	
+28	1.200000e+00	1.711783e+00	-5.76204e-01	1.386882e+00	
+29	1.225000e+00	1.707263e+00	-6.82252e-01	1.381112e+00	
+30	1.250000e+00	1.701930e+00	-6.92754e-01	1.376135e+00	
+31	1.275000e+00	1.695958e+00	-6.95584e-01	1.371962e+00	
+32	1.300000e+00	1.689493e+00	-6.97711e-01	1.368491e+00	
+33	1.325000e+00	1.682640e+00	-6.99362e-01	1.365613e+00	
+34	1.350000e+00	1.675466e+00	-7.00665e-01	1.363220e+00	
+35	1.375000e+00	1.668015e+00	-7.01710e-01	1.361219e+00	
+36	1.400000e+00	1.660322e+00	-7.02561e-01	1.359532e+00	
+37	1.425000e+00	1.652410e+00	-7.03265e-01	1.358096e+00	
+38	1.450000e+00	1.644299e+00	-7.03856e-01	1.356861e+00	
+39	1.475000e+00	1.636006e+00	-7.04359e-01	1.355788e+00	
+40	1.500000e+00	1.627543e+00	-7.04793e-01	1.354846e+00	
+41	1.525000e+00	1.618922e+00	-7.05172e-01	1.354009e+00	
+42	1.550000e+00	1.610152e+00	-7.05508e-01	1.353259e+00	
+43	1.575000e+00	1.601241e+00	-7.05808e-01	1.352580e+00	
+44	1.600000e+00	1.592198e+00	-7.06079e-01	1.351961e+00	
+
+                               *cicsimgen dccmfb
+                               DC transfer characteristic  Wed May 13 01:01:03  2026
+--------------------------------------------------------------------------------
+Index   v-sweep         v(xdut.ntail)   
+--------------------------------------------------------------------------------
+0	5.000000e-01	-5.48088e-01	
+1	5.250000e-01	-7.49494e-01	
+2	5.500000e-01	-7.05031e-01	
+3	5.750000e-01	-2.12345e-01	
+4	6.000000e-01	1.188121e-01	
+5	6.250000e-01	1.188005e-01	
+6	6.500000e-01	1.184990e-01	
+7	6.750000e-01	1.181942e-01	
+8	7.000000e-01	1.178845e-01	
+9	7.250000e-01	1.175707e-01	
+10	7.500000e-01	1.172579e-01	
+11	7.750000e-01	1.169541e-01	
+12	8.000000e-01	1.166627e-01	
+13	8.250000e-01	1.163753e-01	
+14	8.500000e-01	1.160705e-01	
+15	8.750000e-01	1.157201e-01	
+16	9.000000e-01	1.152942e-01	
+17	9.250000e-01	1.147602e-01	
+18	9.500000e-01	1.140707e-01	
+19	9.750000e-01	1.131319e-01	
+20	1.000000e+00	1.116871e-01	
+21	1.025000e+00	1.085079e-01	
+22	1.050000e+00	9.260334e-02	
+23	1.075000e+00	4.294062e-02	
+24	1.100000e+00	-4.01808e-02	
+25	1.125000e+00	-1.50216e-01	
+26	1.150000e+00	-2.80716e-01	
+27	1.175000e+00	-4.27569e-01	
+28	1.200000e+00	-5.85622e-01	
+29	1.225000e+00	-6.90130e-01	
+30	1.250000e+00	-7.00363e-01	
+31	1.275000e+00	-7.03082e-01	
+32	1.300000e+00	-7.05120e-01	
+33	1.325000e+00	-7.06700e-01	
+34	1.350000e+00	-7.07945e-01	
+35	1.375000e+00	-7.08942e-01	
+36	1.400000e+00	-7.09753e-01	
+37	1.425000e+00	-7.10424e-01	
+38	1.450000e+00	-7.10987e-01	
+39	1.475000e+00	-7.11465e-01	
+40	1.500000e+00	-7.11878e-01	
+41	1.525000e+00	-7.12239e-01	
+42	1.550000e+00	-7.12558e-01	
+43	1.575000e+00	-7.12842e-01	
+44	1.600000e+00	-7.13099e-01	
+ASCII raw file "dccmfb_SchGtKttTtVt.raw"
+ngspice-42 done

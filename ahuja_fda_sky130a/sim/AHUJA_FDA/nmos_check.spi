@@ -1,0 +1,15 @@
+* NMOS sizing check
+.option mc_mm_switch=0 mc_pr_switch=0
+.include "/opt/pdk/share/pdk/sky130A/libs.ref/sky130_fd_pr/spice/sky130_fd_pr__nfet_01v8__tt.corner.spice"
+.include "/opt/pdk/share/pdk/sky130A/libs.ref/sky130_fd_pr/spice/sky130_fd_pr__nfet_01v8__mismatch.corner.spice"
+.include "/opt/pdk/share/pdk/sky130A/libs.tech/ngspice/all.spice"
+VDD VDD 0 dc 1.8
+VG  VG  0 dc 0.85
+VD  VD  0 dc 0.9
+XM VD VG 0 0 sky130_fd_pr__nfet_01v8 L=1 W=10 nf=4 m=1
+.control
+op
+print @m.xm.msky130_fd_pr__nfet_01v8[id] @m.xm.msky130_fd_pr__nfet_01v8[vth] @m.xm.msky130_fd_pr__nfet_01v8[vgs]
+quit
+.endc
+.end
