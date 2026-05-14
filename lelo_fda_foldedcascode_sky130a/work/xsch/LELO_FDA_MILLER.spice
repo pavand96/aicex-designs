@@ -50,24 +50,33 @@ XMNC_AUX ncas   ncas   VSS    VSS  sky130_fd_pr__nfet_01v8 L=2 W=15 nf=1 m=1
 XMT    ntail  IBIAS  VSS    VSS  sky130_fd_pr__nfet_01v8 L=1 W=8 nf=2 m=1
 
 * ---- NMOS input pair (100u each) -----------------------------------
-XM1    nfp    VINP   ntail  VSS  sky130_fd_pr__nfet_01v8 L=0.5 W=80 nf=8 m=1
-XM2    nfn    VINN   ntail  VSS  sky130_fd_pr__nfet_01v8 L=0.5 W=80 nf=8 m=1
+* L=2 (was 0.5) for ~4x ro1 -> ~12 dB extra gain at output node
+XM1    nfp    VINP   ntail  VSS  sky130_fd_pr__nfet_01v8 L=2 W=80 nf=8 m=1
+XM2    nfn    VINN   ntail  VSS  sky130_fd_pr__nfet_01v8 L=2 W=80 nf=8 m=1
 
 * ---- PMOS source (200u each: 2x mirror; M3 L matches pbias diode L) -
-XM3    nfp    pbias  VDD    VDD  sky130_fd_pr__pfet_01v8_lvt L=2 W=80 nf=8 m=1
-XM4    nfn    pbias  VDD    VDD  sky130_fd_pr__pfet_01v8_lvt L=2 W=80 nf=8 m=1
+* L=4 for high ro3. W halved (80->40) so Cgs/Cdb at nfp is halved,
+* moving the parasitic pole at nfp well above GBW. Higher Vov (~0.27V)
+* slightly hurts headroom but is fine since nfp sits at ~1.55V.
+XM3    nfp    pbias  VDD    VDD  sky130_fd_pr__pfet_01v8_lvt L=4 W=40 nf=8 m=1
+XM4    nfn    pbias  VDD    VDD  sky130_fd_pr__pfet_01v8_lvt L=4 W=40 nf=8 m=1
 
 * ---- PMOS cascode (100u) -------------------------------------------
-XM5    VOUTP  pcas   nfp    VDD  sky130_fd_pr__pfet_01v8_lvt L=1 W=80 nf=8 m=1
-XM6    VOUTN  pcas   nfn    VDD  sky130_fd_pr__pfet_01v8_lvt L=1 W=80 nf=8 m=1
+* L=2 keeps Cgs(M5) low so nfp pole stays high. Cascode boost from
+* gm5*ro5 alone is enough; the gain mostly comes from ro3.
+XM5    VOUTP  pcas   nfp    VDD  sky130_fd_pr__pfet_01v8_lvt L=2 W=80 nf=8 m=1
+XM6    VOUTN  pcas   nfn    VDD  sky130_fd_pr__pfet_01v8_lvt L=2 W=80 nf=8 m=1
 
 * ---- NMOS cascode (100u) -------------------------------------------
-XM7    VOUTP  ncas   nlowp  VSS  sky130_fd_pr__nfet_01v8 L=1 W=60 nf=6 m=1
-XM8    VOUTN  ncas   nlown  VSS  sky130_fd_pr__nfet_01v8 L=1 W=60 nf=6 m=1
+* L=2 same reasoning -- Rdn dominated by ro9 (CMFB sink, L=4) below.
+XM7    VOUTP  ncas   nlowp  VSS  sky130_fd_pr__nfet_01v8 L=2 W=60 nf=6 m=1
+XM8    VOUTN  ncas   nlown  VSS  sky130_fd_pr__nfet_01v8 L=2 W=60 nf=6 m=1
 
 * ---- CMFB sink ----------------------------------------------------
-XM9    nlowp  vctrl  VSS    VSS  sky130_fd_pr__nfet_01v8 L=2 W=80 nf=8 m=1
-XM10   nlown  vctrl  VSS    VSS  sky130_fd_pr__nfet_01v8 L=2 W=80 nf=8 m=1
+* W reduced 80->20, L 2->4 so device has appreciable Vov (~0.18V) at 100uA
+* AND high ro9 for gain. nlowp lifts out of triode, vctrl stays near mid-rail.
+XM9    nlowp  vctrl  VSS    VSS  sky130_fd_pr__nfet_01v8 L=4 W=20 nf=4 m=1
+XM10   nlown  vctrl  VSS    VSS  sky130_fd_pr__nfet_01v8 L=4 W=20 nf=4 m=1
 
 * ---- Choksi-Carley CMFB (NMOS-input, matches input pair) ----------
 * 5T-OTA topology: NMOS pair sits on NMOS tail (to VSS), PMOS load
@@ -109,10 +118,13 @@ XQVCMN vctrl  VCMREF stailn VSS  sky130_fd_pr__nfet_01v8 L=0.5 W=40 nf=2 m=1
 * PMOS load mirror (shared)
 XQDP   vd     vd     VDD    VDD  sky130_fd_pr__pfet_01v8_lvt L=1 W=20 nf=2 m=1
 XQDN   vctrl  vd     VDD    VDD  sky130_fd_pr__pfet_01v8_lvt L=1 W=20 nf=2 m=1
-CCMC   vctrl  VSS    2p
+* CCMC compensation cap: 10p (was 2p) to lower CMFB loop UGF below
+* the non-dominant pole, ensuring CMFB stability across all corners.
+CCMC   vctrl  VSS    10p
 
 * ---- Startup leak at folding nodes ---------------------------------
 RSTUFP nfp   VSS   20Meg
 RSTUFN nfn   VSS   20Meg
 
 .ends
+
