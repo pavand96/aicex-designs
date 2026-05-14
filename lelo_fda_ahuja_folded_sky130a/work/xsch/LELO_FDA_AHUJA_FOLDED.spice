@@ -1,0 +1,152 @@
+.subckt LELO_FDA_AHUJA_FOLDED VSS VDD VOP VON VIP VIN VCM IBIAS nVcmfb
+* =====================================================================
+* LELO FDA - Ahuja-compensated FOLDED-CASCODE FDA, SKY130A 1.8 V.
+*
+* Replaces the 2-stage Ahuja FDA's stacked cascode (which fails PVT in
+* 1.8 V due to headroom collapse) with a NMOS-input folded-cascode
+* first stage.  Cc remains Ahuja-style (output -> PMOS-cascode SOURCE
+* node), keeping the RHP-zero-free transfer function.
+*
+* Spec (Table 7-1): Avo > 100 dB, UGF > 5 MHz, PM > 50 deg,
+*   SR > 5 V/us, swing >= 1 V, P < 2 mW, T = -40..125 C, VDD=1.8 V+-5%.
+*
+* ---- Stage 1: folded cascode -------------------------------------
+*   Tail @ VSS sets I_TAIL = 100 uA -> M1/M2 each carry 50 uA.
+*   PMOS top sources M3/M4 each source 100 uA -> fold node carries 50
+*   uA into PMOS cascode M5/M6 to high-Z output node APOS/ANEG, then
+*   down through NMOS cascode M7/M8 into NMOS sinks M9/M10 (50 uA).
+*   Wide-swing Sooch cascode bias for both pcas and ncas.
+*
+* ---- Stage 2: PMOS CS + NMOS CMFB load (same as Ahuja FDA) -------
+*   ML_P/N gates from APOS/ANEG, NMOS MU_P/N gates from nVcmfb.
+*   I_2 = 100 uA per side.
+*
+* ---- Ahuja compensation ------------------------------------------
+*   CC_P from VOP to BPOS (= source of M5 = top fold node).
+*   CC_N from VON to BNEG.
+*   Cc to cascode SOURCE kills RHP zero (Ahuja, JSSC 1983).
+*
+* ---- CMFB (resistive sense + PMOS diff amp) ----------------------
+*   1MEG averager from VOP/VON -> v_cms.  PMOS pair compares to VCM,
+*   NMOS mirror integrates -> nVcmfb -> MU gates.
+*
+* Currents (typical):
+*   Tail        : 100 uA   (M_TAIL)
+*   Top PMOS    : 100 uA each x2 = 200 uA  (M3/M4)
+*   Stage 2 PMOS: 100 uA each x2 = 200 uA  (ML_P/N)
+*   CMFB tail   : 50 uA
+*   Bias gens   : ~50 uA total
+*   ----------------------------------------------
+*   Sum         : ~600 uA -> 1.08 mW < 2 mW spec.
+* =====================================================================
+
+* =====================================================================
+* BIAS GENERATOR - Sooch wide-swing cascode mirrors. No resistors,
+* no V-sources. IBIAS pin sinks 100 uA externally (XM_REF).
+* =====================================================================
+
+* NMOS master diode at IBIAS pin
+XM_REF   IBIAS  IBIAS  VSS    VSS  sky130_fd_pr__nfet_01v8 L=1 W=10 nf=2 m=1
+
+* PMOS reference branch: NMOS sink (gate=IBIAS) pulls 100 uA through
+* PMOS-LVT diode -> vbp.
+XM_PSNK  vbp    IBIAS  VSS    VSS  sky130_fd_pr__nfet_01v8 L=1 W=10 nf=2 m=1
+XM_PREF  vbp    vbp    VDD    VDD  sky130_fd_pr__pfet_01v8_lvt L=1 W=20 nf=4 m=1
+
+* ---- Sooch PMOS cascode bias (pcas) for M5/M6 (carry 50 uA each) ---
+* Main W/L: M5 is L=1 W=20 nf=4 (same as M_PREF -> 1:1 mirror at 100 uA;
+* but M5 carries 50 uA, so effective Vov is sqrt(0.5)x lower).
+* Aux at 25 uA, (W/L)_aux = (W/L)_main / 4 -> W=10 nf=1 L=1 -> 2.5x
+* Vov_main -> Vsg_aux = |Vt|+2|Vov_main| -> pcas = VDD - Vsg_aux.
+XM_PCAUX pcas   pcas   VDD    VDD  sky130_fd_pr__pfet_01v8_lvt L=1 W=10 nf=1 m=1
+XM_PCSNK pcas   IBIAS  VSS    VSS  sky130_fd_pr__nfet_01v8 L=1 W=5 nf=1 m=1
+
+* ---- Sooch NMOS cascode bias (ncas) for M7/M8 (carry 50 uA each) ---
+* Main M7 NMOS L=1 W=10 nf=2, Vov ~0.2 V at 50 uA.  Aux at 25 uA needs
+* (W/L)_aux = (W/L)_main / 4 -> W=4 nf=1 L=1.  Vgs_aux = Vt+2*Vov_main
+* -> ncas = Vgs_aux ~0.85 V.
+XM_NCSRC ncas   vbp    VDD    VDD  sky130_fd_pr__pfet_01v8_lvt L=1 W=10 nf=1 m=1
+XM_NCAUX ncas   ncas   VSS    VSS  sky130_fd_pr__nfet_01v8 L=1 W=4 nf=1 m=1
+
+* =====================================================================
+* STAGE 1 : NMOS-input folded cascode
+* =====================================================================
+* Tail (200 uA, 2x mirror of M_REF -> 100 uA per input branch)
+XM_TAIL  ntail  IBIAS  VSS    VSS  sky130_fd_pr__nfet_01v8 L=1 W=20 nf=4 m=1
+
+* NMOS input pair (100 uA / branch).  Drains connect directly to top
+* fold nodes BPOS/BNEG (no R-wires; one physical node).
+XM1     BPOS   VIN    ntail  VSS  sky130_fd_pr__nfet_01v8 L=1 W=40 nf=8 m=1
+XM2     BNEG   VIP    ntail  VSS  sky130_fd_pr__nfet_01v8 L=1 W=40 nf=8 m=1
+
+* Top PMOS current sources (200 uA each, 2x of M_PREF -> oversource
+* so that fold current ~100 uA is well above NMOS sink current).
+* Drain = top fold node (BPOS / BNEG = Cc landing for Ahuja).
+XM3p    BPOS   vbp    VDD    VDD  sky130_fd_pr__pfet_01v8_lvt L=1 W=40 nf=8 m=1
+XM4p    BNEG   vbp    VDD    VDD  sky130_fd_pr__pfet_01v8_lvt L=1 W=40 nf=8 m=1
+
+* PMOS folding cascode (carry ~100 uA each into output).
+* Source = BPOS/BNEG (top fold), drain = APOS/ANEG (high-Z output).
+XM5p    APOS   pcas   BPOS   VDD  sky130_fd_pr__pfet_01v8_lvt L=1 W=40 nf=8 m=1
+XM6p    ANEG   pcas   BNEG   VDD  sky130_fd_pr__pfet_01v8_lvt L=1 W=40 nf=8 m=1
+
+* NMOS bottom cascode (carry 100 uA each from output to sink)
+XM7n    APOS   ncas   nlowp  VSS  sky130_fd_pr__nfet_01v8 L=1 W=20 nf=4 m=1
+XM8n    ANEG   ncas   nlown  VSS  sky130_fd_pr__nfet_01v8 L=1 W=20 nf=4 m=1
+
+* NMOS sink (100 uA each, 1x mirror of M_REF).  KCL balance: M3p
+* sources 200 uA, M1 sinks 100 uA -> 100 uA folds through M5p ->
+* M7n -> M9n.
+XM9n    nlowp  IBIAS  VSS    VSS  sky130_fd_pr__nfet_01v8 L=1 W=10 nf=2 m=1
+XM10n   nlown  IBIAS  VSS    VSS  sky130_fd_pr__nfet_01v8 L=1 W=10 nf=2 m=1
+
+* =====================================================================
+* STAGE 2 : PMOS-LVT CS, NMOS CMFB load (matches Ahuja FDA)
+* =====================================================================
+* Long L for high ro at the output.  W shrunk so stage 2 idle current
+* is ~100 uA per side (was 875 uA at W=80, way over budget).
+XML_P   VOP    APOS   VDD    VDD  sky130_fd_pr__pfet_01v8_lvt L=4 W=20 nf=2 m=1
+XML_N   VON    ANEG   VDD    VDD  sky130_fd_pr__pfet_01v8_lvt L=4 W=20 nf=2 m=1
+
+XMU_P   VOP    nVcmfb VSS    VSS  sky130_fd_pr__nfet_01v8 L=4 W=10 nf=1 m=1
+XMU_N   VON    nVcmfb VSS    VSS  sky130_fd_pr__nfet_01v8 L=4 W=10 nf=1 m=1
+
+* =====================================================================
+* AHUJA CASCODED-MILLER COMPENSATION
+* Cc from outputs to PMOS-cascode SOURCE node (= top fold node BPOS/BNEG).
+* Kills RHP zero.  Sized for ~5 MHz GBW with CL=10 pF.
+* =====================================================================
+CC_P     VOP    BPOS   8p
+CC_N     VON    BNEG   8p
+
+* Small caps on stage-1 high-Z node (APOS/ANEG) push that pole down,
+* making the stage-1 pole the dominant pole.
+CA_P     APOS   VSS    2p
+CA_N     ANEG   VSS    2p
+
+* =====================================================================
+* CMFB : resistive averager + PMOS diff amp (same as Ahuja FDA).
+* Polarity: V_OCM up -> v_cms up -> Q_CMS Vsg shrinks -> I_diode side
+* down -> NMOS mirror sinks LESS -> nVcmfb rises -> MU sinks more ->
+* V_OCM down.  Negative feedback. ✓
+* =====================================================================
+
+RSP    VOP    v_cms  1MEG
+RSN    VON    v_cms  1MEG
+
+* PMOS top tail (50 uA, 0.5x of M_PREF)
+XQT_CM stail_cm vbp  VDD    VDD  sky130_fd_pr__pfet_01v8_lvt L=1 W=10 nf=2 m=1
+
+* PMOS diff pair: SENSE side (gate=v_cms) -> diode-loaded; REF side
+* (gate=VCM) -> mirror-loaded -> nVcmfb output.
+XQ_CMS n_diode v_cms stail_cm VDD sky130_fd_pr__pfet_01v8_lvt L=0.5 W=20 nf=2 m=1
+XQ_REF nVcmfb  VCM   stail_cm VDD sky130_fd_pr__pfet_01v8_lvt L=0.5 W=20 nf=2 m=1
+
+* NMOS load: diode at SENSE side, mirror at REF side -> nVcmfb.
+XQL_REF n_diode n_diode VSS    VSS sky130_fd_pr__nfet_01v8 L=1 W=10 nf=1 m=1
+XQL_CMS nVcmfb  n_diode VSS    VSS sky130_fd_pr__nfet_01v8 L=1 W=10 nf=1 m=1
+
+* CMFB stability cap at integrator output
+CCMC   nVcmfb VSS    2p
+
+.ends

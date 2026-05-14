@@ -19,6 +19,35 @@ Choksi–Carley CMFB, targeted at the SKY130A PDK.
 | Input noise @ 10 MHz | minimize | **6.9 nV/√Hz (thermal floor)** | — |
 | Test load | CL = 2.5 pF | 2.5 pF | ✓ |
 
+### Closed-loop specs (new, 2026-05-12)
+
+Closed-loop benches use the topology from the spec diagram:
+1 MΩ feedback resistors, 1 pF AC-coupling caps, 1 MΩ input/bias resistors,
+2.5 pF load caps.
+
+| Parameter | Spec | Measured (typ) | Status |
+|-----------|------|----------------|--------|
+| IM3 (1 Vpp @ 1 MHz) | ≤ −60 dBc | **−22 dBc** | ✗ FAIL by 38 dB |
+| Differential PM (closed-loop) | ≥ 60° | **~91°** (β=0.5, extracted from open-loop AC) | ✓ |
+| CMFB PM (closed-loop) | ≥ 60° | **>> 60°** (peaking = 0.23 dB) | ✓ |
+
+**Closed-loop benches** (new):
+- `im3.spi` — two-tone IM3 (f1=1.0 MHz, f2=1.1 MHz, 1 Vpp diff)
+- `clpm.spi` / extraction from `ac.spi` — differential PM via β=0.5
+- `cmfbpm.spi` — CMFB PM via VCMREF→VCM_out frequency response peaking
+
+**IM3 root cause**: at 1 MHz the open-loop gain has rolled off to ~20.4 dB
+(from 74.3 dB at DC). Loop gain T = A·β = 20.4 + 20·log(0.5) = 14.4 dB,
+so feedback only suppresses distortion by ~14 dB. Need ~54 dB more loop
+gain at 1 MHz, which requires either a 3-stage topology or much higher
+GBW. The current 144 MHz GBW two-stage cannot meet −60 dB IM3 at 1 MHz.
+
+**Differential PM extraction**: with frequency-flat β = 0.5 (1MΩ/1MΩ),
+the closed-loop PM equals 180° + phase(A) at |A| = 1/β = 6.02 dB.
+From open-loop AC data, this crossing is at ~7.8 MHz where phase = −89.2°,
+giving CL PM ≈ 91°. The 64° open-loop UGF PM at 144 MHz is for the worst
+case β = 1 configuration.
+
 ### Measurement Methodology Notes
 
 - **SR**: Open-loop ±300 mV differential step (fully steers diff pair).
