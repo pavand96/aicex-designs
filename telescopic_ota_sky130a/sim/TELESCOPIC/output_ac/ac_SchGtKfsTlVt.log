@@ -1,0 +1,72 @@
+Warning: Optran step size potentially too large.
+ERROR: (external)  no graphics interface;
+ please check if X-server is running,
+ or ngspice is compiled properly (see INSTALL)
+Warning: m=xx on .subckt line will override multiplier m hierarchy!
+
+Using KLU as Direct Linear Solver
+Note: Starting source stepping
+******
+** ngspice-42 : Circuit level simulation program
+** Compiled with KLU Direct Linear Solver
+** The U. C. Berkeley CAD Group
+** Copyright 1985-1994, Regents of the University of California.
+** Copyright 2001-2023, The ngspice team.
+** Please get your ngspice manual from https://ngspice.sourceforge.io/docs.html
+** Please file your bug-reports at http://ngspice.sourceforge.net/bugrep.html
+** Creation Date: Sun Mar 31 20:15:14 UTC 2024
+******
+
+Note: Compatibility modes selected: hs a
+
+
+Circuit: *cicsimgen ac
+
+option SCALE: Scale is set to 1e-06 for instance and model parameters
+Doing analysis at TEMP = -40.000000 and TNOM = 27.000000
+
+ Reference value :  0.00000e+00Using KLU as Direct Linear Solver
+Note: Starting source stepping
+
+No. of Data Rows : 1
+v(vout) = 9.000000e-01
+v(xdut.na) = 1.173136e+00
+v(xdut.np2) = 1.321960e+00
+v(xdut.nd1) = 5.231873e-01
+v(xdut.nd2) = 5.211775e-01
+v(xdut.ntail) = 2.961532e-01
+Doing analysis at TEMP = -40.000000 and TNOM = 27.000000
+
+
+No. of Data Rows : 901
+dc_gain_db          =  7.785115e+01
+fgbw                =  2.059358e+07
+phase_ugf           =  -1.329925e+02
+f3db                =  4.410491e+03
+f_40db              =  3.450387e+05
+
+================ OPEN-LOOP AC SUMMARY ================
+dc_gain_db = 7.785115e+01
+f3db = 4.410491e+03
+fgbw = 2.059358e+07
+phase_ugf = -1.32993e+02
+pm = 4.700750e+01
+f_40db = 3.450387e+05
+mag_1 = 7.785115e+01
+mag_10 = 7.784895e+01
+mag_100 = 7.763446e+01
+mag_1k = 6.998618e+01
+mag_10k = 5.075270e+01
+mag_100k = 3.072952e+01
+mag_1m = 8.626792e+00
+mag_10m = -1.29711e+01
+ph_1 = -1.13315e-01
+ph_10 = -1.29457e+00
+ph_100 = -1.27495e+01
+ph_1k = -6.61915e+01
+ph_10k = -8.78842e+01
+ph_100k = -9.38876e+01
+ph_1m = -1.21628e+02
+ph_10m = -1.65016e+02
+ASCII raw file "ac_SchGtKfsTlVt.raw"
+ngspice-42 done

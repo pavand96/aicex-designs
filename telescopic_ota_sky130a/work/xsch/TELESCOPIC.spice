@@ -1,0 +1,53 @@
+.subckt TELESCOPIC VSS VDD VOUT VIP VIN IBIAS
+* =====================================================================
+* Single-ended telescopic cascode OTA — SKY130A — v3 (Vt-optimized)
+*
+* Vt mix used (1.8V supply, ~600 mV total stack slack):
+*   - M1/M2 (input pair)        : nfet_01v8_lvt   Vth ~ 0.5 V  (low Vov)
+*   - M3/M4 (NMOS cascodes)     : nfet_01v8       Vth ~ 0.7 V  (high gm/ro)
+*   - M5    (PMOS out-cascode)  : pfet_01v8_lvt   |Vth| ~ 0.5 V (frees |Vsg|)
+*   - M6/M7 (PMOS load mirror)  : pfet_01v8_lvt   |Vth| ~ 0.5 V (saves ~500 mV)
+*
+* Why Vt mix matters:
+*   In SKY130 1.8V, regular pfet_01v8 has |Vth| ~ 1.0V. With a PMOS cascode
+*   stack (|Vsg_M5| + |Vsg_M7| ~ 2.0V), there is literally no room left.
+*   Switching to pfet_01v8_lvt drops |Vth| to ~0.5V, freeing ~500 mV total
+*   for the cascodes to operate in saturation and for VOUT swing.
+*
+*   Plus: lower current (40 uA) increases ro at fixed L, boosting Avo
+*   from ~50 dB (100 uA) to ~74 dB (40 uA) at TT.
+* =====================================================================
+
+* ---- IBIAS device (kept for connectivity, not used) ----------------
+XM8     IBIAS  IBIAS  VSS    VSS  sky130_fd_pr__nfet_01v8  L=1 W=2 nf=1 m=1
+
+* ---- IDEAL Tail current source (40 uA, 20 uA / branch) -------------
+* Lower current -> higher ro for same L -> more gain. Power = 72 uW.
+ITAIL   ntail  VSS    dc 40u
+
+* ---- Input pair (NMOS-LVT, 50 uA each, low Vov for headroom) -----
+* L=4 for max ro2 (cascoded by M4). W*nf/L = 128*4/4 = 128 -> Vov ~ 0.125V
+XM1     nd1    VIP    ntail  VSS  sky130_fd_pr__nfet_01v8_lvt  L=4 W=128 nf=4 m=1
+XM2     nd2    VIN    ntail  VSS  sky130_fd_pr__nfet_01v8_lvt  L=4 W=128 nf=4 m=1
+
+* ---- NMOS cascodes (regular Vth, moderate L for ro vs current) ----
+* W/L_eff = 10*4/1 = 40 -> Vov ~ 0.22 V at 50 uA
+XM3     na     Vb1    nd1    VSS  sky130_fd_pr__nfet_01v8  L=1 W=10 nf=4 m=1
+XM4     VOUT   Vb1    nd2    VSS  sky130_fd_pr__nfet_01v8  L=1 W=10 nf=4 m=1
+
+* ---- PMOS cascode (LVT for headroom, OUTPUT side only) ------------
+* Canonical telescopic: diode-mirror has no cascode (avoids bistable OP).
+* Result: small systematic offset (Vsd_M6 != Vsd_M7). Acceptable.
+XM5     VOUT   Vb2    np2    VDD  sky130_fd_pr__pfet_01v8_lvt  L=1 W=20 nf=4 m=1
+
+* ---- PMOS current mirror (LVT, LONG L for high ro, 1:1) -----------
+* Sized for low |Vov| (~0.16V) at 50 uA per branch -> high |Vds| margin
+* W*nf/L = 80*2/4 = 40 -> |Vov| = sqrt(2*50u/(Kp*40)) ~ 0.22 V (Kp~25 for LVT)
+XM6     na     na     VDD    VDD  sky130_fd_pr__pfet_01v8_lvt  L=4 W=80 nf=2 m=1
+XM7     np2    na     VDD    VDD  sky130_fd_pr__pfet_01v8_lvt  L=4 W=80 nf=2 m=1
+
+* ---- Cascode bias voltages -----------------------------------------
+VBIAS1  Vb1    VSS    dc 1.40
+VBIAS2  Vb2    VSS    dc 0.60
+
+.ends

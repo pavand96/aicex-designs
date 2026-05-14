@@ -1,0 +1,129 @@
+*TB TELESCOPIC — Unity feedback closed-loop (AC + transient step)
+* VIN tied to VOUT (unity feedback per spec testbench diagram)
+* VIP receives small AC signal for closed-loop bode + large step for SR/settling
+.include ../../../work/xsch/TELESCOPIC.spice
+.option TNOM=27 GMIN=1e-12 reltol=1e-3 srcsteps=20 itl1=500 itl6=300 abstol=1e-12
+
+.param vcm       = '{VCM}'
+.param ibias_val = 10u
+.param CL_val    = 2p
+.param RL_val    = 100k
+
+VSS    VSS    0      dc 0
+VDD    VDD    0      dc {vdda}
+* AC stim on VIP (small signal), DC = VCM
+* For tran step: superimpose pulse from vcm-0.4 to vcm+0.4 (0.8 Vpp swing)
+VVIP   VIP    0      dc {vcm}   ac 1   PULSE({vcm-0.4} {vcm+0.4} 20u 1n 1n 30u 60u)
+IIBIAS VSS    IBIAS  dc {ibias_val}
+
+* Unity feedback: VIN tied directly to VOUT
+* (Using a 0-V vsource as wire for explicit current probe / connectivity)
+VFB    VOUT   VIN    dc 0
+
+* Load: 2 pF || 100 kΩ
+CLO    VOUT   VSS    {CL_val}
+RLO    VOUT   VSS    {RL_val}
+
+.include ../xdut.spi
+
+.nodeset v(ibias)        = 0.65
+.nodeset v(xdut.ntail)   = 0.25
+.nodeset v(xdut.nd1)     = 0.45
+.nodeset v(xdut.nd2)     = 0.45
+.nodeset v(xdut.na)      = 1.05
+.nodeset v(xdut.nb)      = 1.55
+.nodeset v(vout)         = {vcm}
+.nodeset v(vin)          = {vcm}
+
+.save all
+
+.control
+set num_threads=8
+unset askquit
+set filetype=ascii
+
+* Phase 1: AC analysis for closed-loop bode (small-signal)
+* OP directly with nodesets — cascoded mirror needs careful init.
+op
+print v(vout) v(vin) v(xdut.na) v(xdut.p1) v(xdut.p2) v(xdut.ntail)
+ac dec 100 1 1G
+
+let vo = v(VOUT)
+let mag_db = 20*log10(abs(vo))
+let ph_deg = 180/PI * cph(vo)
+
+meas ac cl_dc_gain FIND mag_db AT=10
+meas ac cl_bw      WHEN mag_db = 'cl_dc_gain - 3' CROSS=1
+meas ac cl_peak    MAX mag_db FROM=10 TO=1G
+let cl_peaking = cl_peak - cl_dc_gain
+
+echo ""
+echo "============ UNITY-FEEDBACK CLOSED-LOOP AC ============"
+print cl_dc_gain
+print cl_bw
+print cl_peak
+print cl_peaking
+echo "Peaking < 1.25 dB => PM > 60 deg"
+echo "Peaking < 3 dB => PM > 45 deg"
+echo ""
+
+let mag_1k   = mag_db[400]
+let mag_10k  = mag_db[500]
+let mag_100k = mag_db[600]
+let mag_1M   = mag_db[700]
+let mag_10M  = mag_db[800]
+let ph_1k    = ph_deg[400]
+let ph_10k   = ph_deg[500]
+let ph_100k  = ph_deg[600]
+let ph_1M    = ph_deg[700]
+let ph_10M   = ph_deg[800]
+print mag_1k mag_10k mag_100k mag_1M mag_10M
+print ph_1k ph_10k ph_100k ph_1M ph_10M
+
+* Phase 2: Transient step response for SR + settling
+* Need to disable the AC sweep from corrupting tran — repeat with fresh tran
+destroy all
+tran 50n 80u uic
+
+* Slew rate: |dV/dt| during the step
+let vo_t = v(VOUT)
+let svo  = abs(deriv(vo_t))
+
+* Step from vcm-0.4 to vcm+0.4 starts at t=20u
+meas tran sr_rise MAX svo FROM=20u TO=22u
+* Step back at t=50u (20u + 30u pulse width)
+meas tran sr_fall MAX svo FROM=50u TO=52u
+
+* Settling: settled value vs target (vcm+0.4 = 1.3 V)
+meas tran vout_settled AVG vo_t FROM=45u TO=49u
+meas tran vout_low     AVG vo_t FROM=15u TO=19u
+
+let sr_rise_us = sr_rise / 1e6
+let sr_fall_us = sr_fall / 1e6
+
+echo ""
+echo "============ UNITY-FEEDBACK STEP RESPONSE ============"
+print vout_low vout_settled sr_rise sr_fall sr_rise_us sr_fall_us
+
+* Phase 3: SLOW triangle sweep 0 → VDD → 0 to find true swing limits
+destroy all
+alter vvip pulse=( 0 {vdda} 1u 500u 500u 1n 1.001m )
+tran 1u 1.001m uic
+
+let vi3 = v(VIP)
+let vo3 = v(VOUT)
+* Tracking error vs input over full sweep
+let err = vo3 - vi3
+* Find where amp loses tracking (|err| > 50 mV indicates rail/sat exit)
+meas tran vout_max  MAX vo3 FROM=10u TO=500u
+meas tran vout_min  MIN vo3 FROM=510u TO=1000u
+meas tran swing_pp  PARAM='vout_max - vout_min'
+
+echo ""
+echo "============ UNITY-FEEDBACK MAX SWING (1 ms triangle 0→VDD→0) ============"
+print vout_max vout_min swing_pp
+
+write {cicname}.raw
+quit
+.endc
+.end

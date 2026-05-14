@@ -1,0 +1,48 @@
+.subckt TELESCOPIC VSS VDD VOUT VIP VIN IBIAS
+* =====================================================================
+* Single-ended telescopic cascode OTA — SKY130A
+*   M1/M2 : NMOS input pair (VIP, VIN)
+*   M9    : NMOS tail current source (gate=IBIAS mirror)
+*   M3/M4 : NMOS cascodes (gate=Vb1)
+*   M5    : PMOS cascode (gate=Vb2) at output side only
+*   M6/M7 : PMOS current mirror at top (M6 diode-connected)
+*   M8    : IBIAS NMOS diode mirror reference
+*
+* Output Vo is single-ended at drain of M4 / drain of M5.
+* The left side (M3 drain) feeds M6 (diode); mirrored by M7 through
+* M5 cascode to the output, providing Gm-boost (effective gm ≈ 2*gm1).
+*
+* Bias plan @ IBIAS = 10 µA reference:
+*   M8 ref          : 10 µA  (W=10, L=1, nf=1)
+*   M9 tail         : 100 µA (10× ratio: W=10, L=1, nf=10)
+*   Per branch      : 50 µA each side
+*
+* Power: 100 µA tail @ 1.8 V = 180 µW + 10 µA ref = 198 µW < 300 µW spec
+* =====================================================================
+
+* ---- IBIAS NMOS diode reference (kept for connectivity, unused) ----
+XM8     IBIAS  IBIAS  VSS    VSS  sky130_fd_pr__nfet_01v8  L=1 W=10 nf=1 m=1
+
+* ---- Tail current source: IDEAL 100 uA -----------------------------
+ITAIL   ntail  VSS    dc 100u
+
+* ---- Input pair (NMOS, 50 uA each)
+XM1     nd1    VIP    ntail  VSS  sky130_fd_pr__nfet_01v8  L=0.5 W=20 nf=8 m=1
+XM2     nd2    VIN    ntail  VSS  sky130_fd_pr__nfet_01v8  L=0.5 W=20 nf=8 m=1
+
+* ---- NMOS cascodes (L=1) ------------------------------------------
+XM3     na     Vb1    nd1    VSS  sky130_fd_pr__nfet_01v8  L=1 W=20 nf=8 m=1
+XM4     VOUT   Vb1    nd2    VSS  sky130_fd_pr__nfet_01v8  L=1 W=20 nf=8 m=1
+
+* ---- PMOS cascode (output side, gate=Vb2) ---------------------------
+XM5     VOUT   Vb2    nb     VDD  sky130_fd_pr__pfet_01v8  L=0.5 W=10 nf=4 m=1
+
+* ---- Simple PMOS current mirror (M6 diode-connected, 1:1) ----------
+XM6     na     na     VDD    VDD  sky130_fd_pr__pfet_01v8  L=0.5 W=10 nf=4 m=1
+XM7     nb     na     VDD    VDD  sky130_fd_pr__pfet_01v8  L=0.5 W=10 nf=4 m=1
+
+* ---- Cascode bias voltages -----------------------------------------
+VBIAS1  Vb1    VSS    dc 1.20
+VBIAS2  Vb2    VSS    dc 0.60
+
+.ends

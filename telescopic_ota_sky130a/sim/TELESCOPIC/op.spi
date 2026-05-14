@@ -1,0 +1,105 @@
+*TB TELESCOPIC — operating point
+.include ../../../work/xsch/TELESCOPIC.spice
+.option TNOM=27 GMIN=1e-12 reltol=1e-3 srcsteps=20 itl1=500 itl6=300
+
+.param vcm       = '{VCM}'
+.param ibias_val = 10u
+
+VSS    VSS    0      dc 0
+VDD    VDD    0      dc {vdda}
+VVIP   VIP    0      dc {vcm}
+VVIN   VIN    0      dc {vcm}
+IIBIAS VSS    IBIAS  dc {ibias_val}
+* CL only to keep node defined
+CLO    VOUT   VSS    2p
+* DC-only bias clamp: pin VOUT=VCM via huge inductor (open at AC)
+LBIAS  VOUT   nbias  1G
+VBIAS_OUT nbias VSS dc {vcm}
+.include ../xdut.spi
+
+.nodeset v(ibias)        = 0.7
+.nodeset v(xdut.ntail)   = 0.25
+.nodeset v(xdut.nd1)     = 0.45
+.nodeset v(xdut.nd2)     = 0.45
+.nodeset v(xdut.na)      = 1.05
+.nodeset v(xdut.np2)      = 1.55
+.nodeset v(vout)         = {vcm}
+* Force symmetric startup with .ic
+.ic v(xdut.nd1)=0.40 v(xdut.nd2)=0.40 v(vout)={vcm} v(xdut.na)=1.20 v(xdut.np2)=1.40
+
+.save all
+
+.control
+set num_threads=8
+unset askquit
+set filetype=ascii
+
+* Settle then OP
+tran 1n 50u uic
+op
+
+print v(ibias) v(vout) v(xdut.ntail) v(xdut.nd1) v(xdut.nd2) v(xdut.na) v(xdut.np2)
+
+echo "==== M1 (input pair) ===="
+print @m.xdut.xm1.msky130_fd_pr__nfet_01v8_lvt[gm] @m.xdut.xm1.msky130_fd_pr__nfet_01v8_lvt[gds]
+print @m.xdut.xm1.msky130_fd_pr__nfet_01v8_lvt[id] @m.xdut.xm1.msky130_fd_pr__nfet_01v8_lvt[vgs]
+print @m.xdut.xm1.msky130_fd_pr__nfet_01v8_lvt[vds] @m.xdut.xm1.msky130_fd_pr__nfet_01v8_lvt[vth]
+
+echo "==== M3 (NMOS cascode left) ===="
+print @m.xdut.xm3.msky130_fd_pr__nfet_01v8[gm] @m.xdut.xm3.msky130_fd_pr__nfet_01v8[gds]
+print @m.xdut.xm3.msky130_fd_pr__nfet_01v8[vds] @m.xdut.xm3.msky130_fd_pr__nfet_01v8[vgs]
+print @m.xdut.xm3.msky130_fd_pr__nfet_01v8[vth]
+
+echo "==== M4 (NMOS cascode right - output) ===="
+print @m.xdut.xm4.msky130_fd_pr__nfet_01v8[gm] @m.xdut.xm4.msky130_fd_pr__nfet_01v8[gds]
+print @m.xdut.xm4.msky130_fd_pr__nfet_01v8[vds] @m.xdut.xm4.msky130_fd_pr__nfet_01v8[vgs]
+print @m.xdut.xm4.msky130_fd_pr__nfet_01v8[vth]
+
+echo "==== M5 (PMOS cascode output) ===="
+print @m.xdut.xm5.msky130_fd_pr__pfet_01v8_lvt[gm] @m.xdut.xm5.msky130_fd_pr__pfet_01v8_lvt[gds]
+print @m.xdut.xm5.msky130_fd_pr__pfet_01v8_lvt[vds] @m.xdut.xm5.msky130_fd_pr__pfet_01v8_lvt[vgs]
+print @m.xdut.xm5.msky130_fd_pr__pfet_01v8_lvt[vth]
+
+echo "==== M6 (PMOS mirror diode) ===="
+print @m.xdut.xm6.msky130_fd_pr__pfet_01v8_lvt[gm] @m.xdut.xm6.msky130_fd_pr__pfet_01v8_lvt[gds]
+print @m.xdut.xm6.msky130_fd_pr__pfet_01v8_lvt[id] @m.xdut.xm6.msky130_fd_pr__pfet_01v8_lvt[vds]
+print @m.xdut.xm6.msky130_fd_pr__pfet_01v8_lvt[vgs] @m.xdut.xm6.msky130_fd_pr__pfet_01v8_lvt[vth]
+
+echo "==== M7 (PMOS mirror) ===="
+print @m.xdut.xm7.msky130_fd_pr__pfet_01v8_lvt[gm] @m.xdut.xm7.msky130_fd_pr__pfet_01v8_lvt[gds]
+print @m.xdut.xm7.msky130_fd_pr__pfet_01v8_lvt[id] @m.xdut.xm7.msky130_fd_pr__pfet_01v8_lvt[vds]
+print @m.xdut.xm7.msky130_fd_pr__pfet_01v8_lvt[vgs] @m.xdut.xm7.msky130_fd_pr__pfet_01v8_lvt[vth]
+
+echo "==== Output impedance budget ===="
+let gm1   = @m.xdut.xm1.msky130_fd_pr__nfet_01v8_lvt[gm]
+let gm4   = @m.xdut.xm4.msky130_fd_pr__nfet_01v8[gm]
+let gds4  = @m.xdut.xm4.msky130_fd_pr__nfet_01v8[gds]
+let gds2  = @m.xdut.xm2.msky130_fd_pr__nfet_01v8_lvt[gds]
+let gm5   = @m.xdut.xm5.msky130_fd_pr__pfet_01v8_lvt[gm]
+let gds5  = @m.xdut.xm5.msky130_fd_pr__pfet_01v8_lvt[gds]
+let gds7  = @m.xdut.xm7.msky130_fd_pr__pfet_01v8_lvt[gds]
+let ro2   = 1/gds2
+let ro4   = 1/gds4
+let ro5   = 1/gds5
+let ro7   = 1/gds7
+let Rdn   = gm4*ro4*ro2          $ NMOS cascode looking up from VOUT
+let Rup   = gm5*ro5*ro7          $ PMOS cascode looking down from VOUT
+let RL    = 100k
+let Rout  = 1/(1/Rdn + 1/Rup + 1/RL)
+let Avo   = gm1 * Rout
+let Avo_db = 20*log10(abs(Avo))
+print gm1 gm4 gm5
+print ro2 ro4 ro5 ro7
+print Rdn Rup
+print RL Rout
+print Avo Avo_db
+
+* Total supply current
+let i_vdd = -i(vdd)
+let p_supply = i_vdd * v(vdd)
+print i_vdd p_supply
+
+write {cicname}.raw
+quit
+.endc
+.end

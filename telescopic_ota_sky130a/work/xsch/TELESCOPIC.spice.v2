@@ -1,0 +1,39 @@
+.subckt TELESCOPIC VSS VDD VOUT VIP VIN IBIAS
+* =====================================================================
+* Telescopic cascode OTA — SKY130A (iteration 2)
+* Sizing chosen for STRONG INVERSION (Vov ≈ 150 mV) to maximize gm·ro
+* and avoid weak-inversion gain collapse.
+* =====================================================================
+
+* ---- IBIAS device (just for connectivity) ---------------------------
+XM8     IBIAS  IBIAS  VSS    VSS  sky130_fd_pr__nfet_01v8  L=1 W=2 nf=1 m=1
+
+* ---- IDEAL Tail current source (100 uA) -----------------------------
+ITAIL   ntail  VSS    dc 100u
+
+* ---- Input pair (NMOS, 50 uA each, strong inversion)
+* For Vov ≈ 150 mV: W/L = 50uA/(0.5*100uA·0.0225) ≈ 44.
+* W=4 nf=2 L=0.5 → W/L = 16. Too small. Try W=4 nf=4 L=0.5 → W/L=32. Vov~180mV. Good.
+XM1     nd1    VIP    ntail  VSS  sky130_fd_pr__nfet_01v8  L=0.5 W=4 nf=4 m=1
+XM2     nd2    VIN    ntail  VSS  sky130_fd_pr__nfet_01v8  L=0.5 W=4 nf=4 m=1
+
+* ---- NMOS cascodes (LONG L for high ro)
+XM3     na     Vb1    nd1    VSS  sky130_fd_pr__nfet_01v8  L=2 W=4 nf=4 m=1
+XM4     VOUT   Vb1    nd2    VSS  sky130_fd_pr__nfet_01v8  L=2 W=4 nf=4 m=1
+
+* ---- PMOS cascode (output side only, matched to mirror)
+XM5     VOUT   Vb2    nb     VDD  sky130_fd_pr__pfet_01v8  L=2 W=8 nf=2 m=1
+
+* ---- PMOS current mirror (1:1, LONG L for high ro)
+* For PMOS at 50 uA, Vov ≈ 150 mV: W/L = 50/(0.5*40·0.0225) ≈ 111. With L=2, W=222.
+* Use W=8 nf=2 L=1 → W/L = 16. Vov_p ≈ 250 mV. OK.
+XM6     na     na     VDD    VDD  sky130_fd_pr__pfet_01v8  L=1 W=8 nf=2 m=1
+XM7     nb     na     VDD    VDD  sky130_fd_pr__pfet_01v8  L=1 W=8 nf=2 m=1
+
+* ---- Cascode bias voltages
+* Vb1 = Vov_M1 + Vgs_M3 ≈ 0.18 + 0.85 = 1.03 V  (force M1 into saturation)
+* Vb2 = nb - Vgs_M5 ≈ 1.55 - 1.05 = 0.50 V
+VBIAS1  Vb1    VSS    dc 1.05
+VBIAS2  Vb2    VSS    dc 0.50
+
+.ends

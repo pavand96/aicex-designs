@@ -1,0 +1,110 @@
+Warning: Optran step size potentially too large.
+ERROR: (external)  no graphics interface;
+ please check if X-server is running,
+ or ngspice is compiled properly (see INSTALL)
+Warning: m=xx on .subckt line will override multiplier m hierarchy!
+
+Warning : Nodeset on non-existent node - xdut.nb, ignored
+   Please check line .nodeset v(xdut.nb)=1.55
+
+Using KLU as Direct Linear Solver
+Note: vvip: dc value used for op instead of transient time=0 value.
+Note: Starting source stepping
+******
+** ngspice-42 : Circuit level simulation program
+** Compiled with KLU Direct Linear Solver
+** The U. C. Berkeley CAD Group
+** Copyright 1985-1994, Regents of the University of California.
+** Copyright 2001-2023, The ngspice team.
+** Please get your ngspice manual from https://ngspice.sourceforge.io/docs.html
+** Please file your bug-reports at http://ngspice.sourceforge.net/bugrep.html
+** Creation Date: Sun Mar 31 20:15:14 UTC 2024
+******
+
+Note: Compatibility modes selected: hs a
+
+
+Circuit: *cicsimgen unity
+
+option SCALE: Scale is set to 1e-06 for instance and model parameters
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+ Reference value :  0.00000e+00Warning from checkvalid: vector xdut.p1 is not available or has zero length.
+Using KLU as Direct Linear Solver
+Note: vvip: dc value used for op instead of transient time=0 value.
+Note: Starting source stepping
+
+No. of Data Rows : 1
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+
+No. of Data Rows : 901
+cl_dc_gain          =  -2.444365e-01
+
+Error: measure  cl_bw  when(WHEN) : out of interval
+Warning from checkvalid: vector cl_bw is not available or has zero length.
+Using KLU as Direct Linear Solver
+Note: vvip: dc value used for op instead of transient time=0 value.
+Note: Starting source stepping
+ meas ac cl_bw when mag_db=cl_dc_gain - 3 cross=1 failed!
+
+cl_peak             =  -9.036396e-02 at=  6.606934e+06
+
+============ UNITY-FEEDBACK CLOSED-LOOP AC ============
+cl_dc_gain = -2.44437e-01
+cl_peak = -9.03640e-02
+cl_peaking = 1.540725e-01
+Peaking < 1.25 dB => PM > 60 deg
+Peaking < 3 dB => PM > 45 deg
+
+mag_1k = -2.44436e-01
+mag_10k = -2.44369e-01
+mag_100k = -2.37764e-01
+mag_1m = -3.45209e-01
+mag_10m = -1.39425e+01
+ph_1k = -2.69588e-02
+ph_10k = -2.69597e-01
+ph_100k = -2.70490e+00
+ph_1m = -3.47403e+01
+ph_10m = -9.49290e+00
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using transient initial conditions
+ Reference value :  5.00554e-05PPerror: syntax error in line segment
+   ( 0 vdda 1u 500u 500u 1n 1.001m )
+near
+            1u 500u 500u 1n 1.001m )
+Using KLU as Direct Linear Solver
+Note: vvip: dc value used for op instead of transient time=0 value.
+Note: Starting source stepping
+
+No. of Data Rows : 1688
+sr_rise             =  1.657591e+08 at=  2.000000e-05
+sr_fall             =  2.035824e+08 at=  5.000170e-05
+vout_settled        =  1.123698e+00 from=  4.500000e-05 to=  4.903030e-05
+vout_low            =  4.872348e-01 from=  1.500000e-05 to=  1.900709e-05
+
+============ UNITY-FEEDBACK STEP RESPONSE ============
+vout_low = 4.872348e-01
+vout_settled = 1.123698e+00
+sr_rise = 1.657591e+08
+sr_fall = 2.035824e+08
+sr_rise_us = 1.657591e+02
+sr_fall_us = 2.035824e+02
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using transient initial conditions
+ Reference value :  1.70009e-04 Reference value :  5.68447e-04 Reference value :  9.80001e-04Warning from checkvalid: vector swing_pp is not available or has zero length.
+
+No. of Data Rows : 1973
+vout_max            =  1.125703e+00 at=  2.011388e-05
+vout_min            =  4.369698e-01 at=  9.500860e-04
+	measure 'swing_pp'  failed
+Error: measure  swing_pp  :
+	no such function as 'param=vout_max - vout_min'
+ meas tran swing_pp param=vout_max - vout_min failed!
+
+
+============ UNITY-FEEDBACK MAX SWING (1 ms triangle 0→VDD→0) ============
+ASCII raw file "unity_SchGtKttTtVt.raw"
+ngspice-42 done
