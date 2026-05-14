@@ -1,0 +1,119 @@
+* LELO_NMC_3STAGE - Single-ended 3-stage Nested-Miller Compensated opamp
+* SKY130A, 1.8 V supply, CL = 10 pF
+*
+* Topology (single-ended):
+*   Stage 1: NMOS-input folded cascode, PMOS current-mirror load -> vo1
+*            VINP up -> vo1 DOWN  (inverting)
+*   Stage 2: PMOS-input 5T-OTA, vo1 on '+' input, VREF on '-' input -> vo2
+*            vo1 up -> vo2 UP  (non-inverting from '+' input -- REQUIRED for NMC)
+*   Stage 3: PMOS common-source, NMOS current-source load -> VOUT
+*            vo2 up -> VOUT DOWN  (inverting)
+*   Total:   VINP up -> VOUT UP. So netlist VINP is the NON-INVERTING input.
+*
+* Compensation (Nested Miller):
+*   Cm1: VOUT -> vo2  (around stage 3)
+*   Cm2: VOUT -> vo1  (around stages 2+3)
+*
+* Bias: V-source biases internal to subckt + AC-coupling caps between stages
+* so each stage's DC operating point is set independently. After tuning,
+* AC caps are removed and gates are DC-tied (with current-mirror biases).
+
+.subckt LELO_NMC_3STAGE VSS VDD VOUT IBIAS VINP VINN VREF
+
+* ---- Internal V-source biases ----
+.param Vbp_tail1 = 1.20
+.param Vbp_cas1  = 0.75
+.param Vbn_cas1  = 1.05
+.param Vbn_src1  = 0.70
+.param Vbn_tail1 = 0.85    ; separate tail bias to boost SR (charges Cm2)
+.param Vbp_tail2 = 0.60
+.param Vbn_src3  = 0.70
+.param Vg_in2    = 0.90    ; DC bias for stage 2 '+' input (M21p gate)
+.param Vg_in3    = 1.08
+
+VBPT1 vbp_tail1 VSS dc 'Vbp_tail1'
+VBPC1 vbp_cas1  VSS dc 'Vbp_cas1'
+VBNC1 vbn_cas1  VSS dc 'Vbn_cas1'
+VBNS1 vbn_src1  VSS dc 'Vbn_src1'
+VBNT1 vbn_tail1 VSS dc 'Vbn_tail1'
+VBPT2 vbp_tail2 VSS dc 'Vbp_tail2'
+VBNS3 vbn_src3  VSS dc 'Vbn_src3'
+VBGI2 vg_in2_dc VSS dc 'Vg_in2'
+VBGI3 vg_in3_dc VSS dc 'Vg_in3'
+
+* =====================================================================
+* STAGE 1 : NMOS-input folded cascode, single-ended via PMOS mirror
+* =====================================================================
+* Currents (target):
+*   I_tail1 = 100 uA  (50 uA per side)
+*   I_psrc  = 100 uA each (PMOS source supplying fold node)
+*   I_fold  = 50 uA each (= I_psrc - I_input) flowing through cascode column
+
+XMTAIL1 ntail1 vbn_tail1 VSS VSS sky130_fd_pr__nfet_01v8 L=1 W=40 nf=8 m=1
+
+* NMOS input pair
+XM1   nfp  VINN ntail1 VSS sky130_fd_pr__nfet_01v8 L=1 W=40 nf=8 m=1
+XM2   nfn  VINP ntail1 VSS sky130_fd_pr__nfet_01v8 L=1 W=40 nf=8 m=1
+
+* PMOS sources at TOP (mirror load: M3p diode, M5p mirror)
+XM3p  nfp  vo1d VDD VDD sky130_fd_pr__pfet_01v8_lvt L=2 W=40 nf=8 m=1
+XM5p  nfn  vo1d VDD VDD sky130_fd_pr__pfet_01v8_lvt L=2 W=40 nf=8 m=1
+
+* PMOS cascode (low-swing cascode bias)
+XM7p  vo1d vbp_cas1 nfp VDD sky130_fd_pr__pfet_01v8_lvt L=1 W=40 nf=8 m=1
+XM8p  vo1  vbp_cas1 nfn VDD sky130_fd_pr__pfet_01v8_lvt L=1 W=40 nf=8 m=1
+
+* NMOS cascode
+XM9n  vo1d vbn_cas1 nlowp VSS sky130_fd_pr__nfet_01v8 L=1 W=20 nf=4 m=1
+XM10n vo1  vbn_cas1 nlown VSS sky130_fd_pr__nfet_01v8 L=1 W=20 nf=4 m=1
+
+* NMOS source at bottom of cascode (50 uA each)
+XM11n nlowp vbn_src1 VSS VSS sky130_fd_pr__nfet_01v8 L=2 W=10 nf=2 m=1
+XM12n nlown vbn_src1 VSS VSS sky130_fd_pr__nfet_01v8 L=2 W=10 nf=2 m=1
+
+* =====================================================================
+* STAGE 2 : PMOS-input 5T-OTA, non-inverting from '+' (vo1) to vo2
+* =====================================================================
+* Tail PMOS at TOP (gate=Vbp_tail2, default 0.6 V => Vsg=1.2, large W).
+* Diff pair M21p('+', vo1), M22p('-', VREF), sources tied to ptail2.
+* NMOS mirror load: M23n (diode, '+' side), M24n (mirror, '-' side).
+* Output vo2 = drain of M22p / M24n.
+*
+* vo1 up -> Vsg(M21p) down -> I_M21 down -> tail diverts to M22p ->
+* I_M22 up -> M22 sources more current INTO output -> mirror M24n sinks
+* same as it did before (set by diode side which now has LESS current) ->
+* vo2 rises. NON-INVERTING. ✓
+*
+* DC: vo2 = VSS + Vgs_M24n ~ 0.75 V -- nicely biases stage 3 PMOS gate.
+
+XMTAIL2P ptail2 vbp_tail2 VDD VDD sky130_fd_pr__pfet_01v8_lvt L=1 W=80 nf=8 m=1
+XM21p    vo2d   vg_in2  ptail2 VDD sky130_fd_pr__pfet_01v8_lvt L=1 W=40 nf=8 m=1
+XM22p    vo2    VREF    ptail2 VDD sky130_fd_pr__pfet_01v8_lvt L=1 W=40 nf=8 m=1
+XM23n    vo2d   vo2d  VSS    VSS sky130_fd_pr__nfet_01v8     L=2 W=10 nf=2 m=1
+XM24n    vo2    vo2d  VSS    VSS sky130_fd_pr__nfet_01v8     L=2 W=10 nf=2 m=1
+
+* AC coupling vo1 -> vg_in2 (large cap, DC-block, AC-short above ~kHz)
+CAC12  vo1 vg_in2 1u
+* DC restore on vg_in2 via large R from V-bias
+RDC12  vg_in2 vg_in2_dc 10G
+
+* =====================================================================
+* STAGE 3 : PMOS common-source, NMOS current-source load
+* =====================================================================
+XM31p VOUT vg_in3   VDD VDD sky130_fd_pr__pfet_01v8_lvt L=2 W=240 nf=24 m=1
+XM32n VOUT vbn_src3 VSS VSS sky130_fd_pr__nfet_01v8     L=2 W=120 nf=12 m=1
+
+* AC coupling vo2 -> vg_in3
+CAC23  vo2 vg_in3 1u
+RDC23  vg_in3 vg_in3_dc 10G
+
+* =====================================================================
+* NESTED MILLER COMPENSATION
+* =====================================================================
+CCM1 VOUT vo2 6p
+CCM2 VOUT vo1 12p
+
+* IBIAS placeholder (unused in V-bias version)
+RIB IBIAS VSS 1G
+
+.ends

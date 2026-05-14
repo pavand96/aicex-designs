@@ -9,3 +9,6 @@
 *.orig
 *.raw
 *.logm
+**/output_*/
+**/*.run/
+*.log

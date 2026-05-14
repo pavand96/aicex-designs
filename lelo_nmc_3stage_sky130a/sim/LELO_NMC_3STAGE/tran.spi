@@ -1,0 +1,60 @@
+*TB LELO_NMC_3STAGE - Slew rate (closed-loop unity gain)
+.include ../../../work/xsch/LELO_NMC_3STAGE.spice
+.option TNOM=27 GMIN=1e-12 reltol=1e-3 srcsteps=20 itl1=500 itl6=300 abstol=1e-12
+
+.param vcm = 'vdda/2'
+.param ibias_val = 10u
+
+VSS    VSS    0      dc 0
+VDD    VDD    0      dc {vdda}
+VVREF  VREF   0      dc {vcm}
+* Unity-gain follower: VINN = VOUT
+* VINP = pulse 0.4 -> 1.4 V (1 V step) at 5 us
+VVINP  VINP   0      dc {vcm} pulse(0.9 1.4 10u 1n 1n 25u 60u)
+RFB1   VOUT   VINN   1
+IIBIAS VSS    IBIAS  dc {ibias_val}
+CL     VOUT   VSS    10p
+.include ../xdut.spi
+
+.nodeset v(VOUT)        = {vcm}
+.nodeset v(xdut.vo1)    = 1.1
+.nodeset v(xdut.vo2)    = 1.04
+.nodeset v(xdut.vg_in2) = 0.9
+.nodeset v(xdut.vg_in3) = 1.08
+.nodeset v(xdut.vo1d)   = 1.1
+.nodeset v(xdut.vo2d)   = 1.04
+
+.ic v(VOUT)        = {vcm}
+.ic v(xdut.vo1)    = 1.08
+.ic v(xdut.vo2)    = 1.04
+.ic v(xdut.vg_in2) = 0.9
+.ic v(xdut.vg_in3) = 1.08
+.ic v(xdut.vo1d)   = 1.08
+.ic v(xdut.vo2d)   = 1.04
+
+.save all
+.control
+set num_threads=8
+unset askquit
+set filetype=ascii
+
+tran 50n 60u
+* SR up: from VOUT crossing 1.0 to 1.3 V on rising edge
+meas tran t_rise_a  WHEN v(VOUT)=1.0  TD=10u  RISE=1
+meas tran t_rise_b  WHEN v(VOUT)=1.3  TD=10u  RISE=1
+let sr_up = (1.3 - 1.0) / (t_rise_b - t_rise_a)
+* SR down: from VOUT crossing 1.3 to 1.0 V on falling edge after 35us
+meas tran t_fall_a  WHEN v(VOUT)=1.3  TD=35u  FALL=1
+meas tran t_fall_b  WHEN v(VOUT)=1.0  TD=35u  FALL=1
+let sr_dn = (1.3 - 1.0) / (t_fall_b - t_fall_a)
+
+echo 'SR_up [V/us]:'
+print sr_up*1e-6
+echo 'SR_dn [V/us]:'
+print sr_dn*1e-6
+print v(VOUT)[100] v(VOUT)[300] v(VOUT)[500] v(VOUT)[700] v(VOUT)[900]
+
+write {cicname}.raw
+quit
+.endc
+.end

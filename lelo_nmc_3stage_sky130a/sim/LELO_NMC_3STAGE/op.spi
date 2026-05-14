@@ -1,0 +1,84 @@
+*TB LELO_NMC_3STAGE - DC operating point only
+.include ../../../work/xsch/LELO_NMC_3STAGE.spice
+.option TNOM=27 GMIN=1e-12 reltol=1e-3 srcsteps=20 itl1=500 itl6=300 abstol=1e-12
+
+.param vcm = 'vdda/2'
+.param ibias_val = 10u
+
+VSS    VSS    0      dc 0
+VDD    VDD    0      dc {vdda}
+VVREF  VREF   0      dc {vcm}
+VVINP  VINP   0      dc {vcm}
+VVINN  VINN   0      dc {vcm}
+IIBIAS VSS    IBIAS  dc {ibias_val}
+CL     VOUT   VSS    10p
+.include ../xdut.spi
+
+.nodeset v(VOUT)        = {vcm}
+.nodeset v(xdut.vo1)    = 1.1
+.nodeset v(xdut.vo2)    = 0.9
+.nodeset v(xdut.vg_in2) = 0.9
+.nodeset v(xdut.vg_in3) = 0.9
+.nodeset v(xdut.vo1d)   = 1.1
+.nodeset v(xdut.vo2d)   = 0.75
+
+.save all
+.control
+set num_threads=8
+unset askquit
+set filetype=ascii
+op
+
+* Power
+let i_vdd = abs(i(VDD))
+let p_q = i_vdd * 1.8
+echo "================ OP SUMMARY ================"
+print v(VOUT) v(xdut.vo1) v(xdut.vo2)
+print v(xdut.nfp) v(xdut.nfn) v(xdut.vo1d)
+print v(xdut.nlowp) v(xdut.nlown) v(xdut.ntail1) v(xdut.ptail2) v(xdut.vo2d)
+print i_vdd p_q
+
+* Branch currents
+print @m.xdut.xmtail1.msky130_fd_pr__nfet_01v8[id]
++ @m.xdut.xm1.msky130_fd_pr__nfet_01v8[id]
++ @m.xdut.xm2.msky130_fd_pr__nfet_01v8[id]
++ @m.xdut.xm3p.msky130_fd_pr__pfet_01v8_lvt[id]
++ @m.xdut.xm5p.msky130_fd_pr__pfet_01v8_lvt[id]
++ @m.xdut.xm7p.msky130_fd_pr__pfet_01v8_lvt[id]
++ @m.xdut.xm8p.msky130_fd_pr__pfet_01v8_lvt[id]
++ @m.xdut.xm9n.msky130_fd_pr__nfet_01v8[id]
++ @m.xdut.xm10n.msky130_fd_pr__nfet_01v8[id]
++ @m.xdut.xm11n.msky130_fd_pr__nfet_01v8[id]
++ @m.xdut.xm12n.msky130_fd_pr__nfet_01v8[id]
+
+print @m.xdut.xmtail2p.msky130_fd_pr__pfet_01v8_lvt[id]
++ @m.xdut.xm21p.msky130_fd_pr__pfet_01v8_lvt[id]
++ @m.xdut.xm22p.msky130_fd_pr__pfet_01v8_lvt[id]
++ @m.xdut.xm23n.msky130_fd_pr__nfet_01v8[id]
++ @m.xdut.xm24n.msky130_fd_pr__nfet_01v8[id]
+
+print @m.xdut.xm31p.msky130_fd_pr__pfet_01v8_lvt[id]
++ @m.xdut.xm32n.msky130_fd_pr__nfet_01v8[id]
+
+* gm/Id
+print @m.xdut.xm1.msky130_fd_pr__nfet_01v8[gm]
++ @m.xdut.xm2.msky130_fd_pr__nfet_01v8[gm]
++ @m.xdut.xm21p.msky130_fd_pr__pfet_01v8_lvt[gm]
++ @m.xdut.xm31p.msky130_fd_pr__pfet_01v8_lvt[gm]
++ @m.xdut.xm32n.msky130_fd_pr__nfet_01v8[gm]
+
+* Vds (saturation check)
+print @m.xdut.xm1.msky130_fd_pr__nfet_01v8[vds]
++ @m.xdut.xm3p.msky130_fd_pr__pfet_01v8_lvt[vds]
++ @m.xdut.xm7p.msky130_fd_pr__pfet_01v8_lvt[vds]
++ @m.xdut.xm9n.msky130_fd_pr__nfet_01v8[vds]
++ @m.xdut.xm11n.msky130_fd_pr__nfet_01v8[vds]
++ @m.xdut.xm21p.msky130_fd_pr__pfet_01v8_lvt[vds]
++ @m.xdut.xm22p.msky130_fd_pr__pfet_01v8_lvt[vds]
++ @m.xdut.xm31p.msky130_fd_pr__pfet_01v8_lvt[vds]
++ @m.xdut.xm32n.msky130_fd_pr__nfet_01v8[vds]
+
+write {cicname}.raw
+quit
+.endc
+.end

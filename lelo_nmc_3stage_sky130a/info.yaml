@@ -1,0 +1,7 @@
+library: LELO_NMC_3STAGE_SKY130A
+cell: LELO_NMC_3STAGE
+author: pavand96
+github: pavand96
+tagline: 3-stage nested-Miller compensated single-ended opamp
+email: anon@anon.com
+url: pavand96.github.io
