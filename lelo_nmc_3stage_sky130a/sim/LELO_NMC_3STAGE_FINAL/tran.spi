@@ -1,0 +1,60 @@
+*TB LELO_NMC_3STAGE_FINAL - Transient (SR + swing)
+.include ../../../work/xsch/LELO_NMC_3STAGE_FINAL.spice
+.option TNOM=27 GMIN=1e-12 reltol=1e-3 srcsteps=20 itl1=500 itl6=300 abstol=1e-12
+
+.param vcm = 'vdda/2'
+.param ibias_val = 10u
+.param vos       = {VOS}
+
+VSS    VSS    0      dc 0
+VDD    VDD    0      dc {vdda}
+* Behavioural CMFB on VREF, faster LP for tran (~1ms time const)
+BVREF_RAW vrefraw 0   v = vcm + 100*(vcm - v(VOUT))
+RREFLP    vrefraw VREF 1k
+CREFLP    VREF    0    1u  ic=1.0
+
+* Closed-loop unity-gain (pulse step on VINP)
+RFB    VOUT   VINN   1
+* Slew step: 0.4 V at TD=20us, edges 1 ns
+VVINP  VINP   0      pulse(0.7 1.1 20u 1n 1n 25u 60u)
+IIBIAS VSS    IBIAS  dc {ibias_val}
+CL     VOUT   VSS    10p
+.include ../xdut.spi
+
+.nodeset v(VOUT)        = {vcm}
+.nodeset v(VINN)        = {vcm}
+.nodeset v(VREF)        = 1.0
+.nodeset v(xdut.vbn)    = 0.72
+.nodeset v(xdut.vbp)    = 1.13
+.nodeset v(xdut.vo1)    = 1.13
+.nodeset v(xdut.vo2)    = 1.02
+.ic v(VREF) = 1.0
+
+.save v(VOUT) v(VINP) v(VINN) v(VREF) v(xdut.vo1) v(xdut.vo2)
+
+.control
+set num_threads=8
+unset askquit
+set filetype=ascii
+
+tran 50n 80u uic
+
+* Slew rate measurements: between 0.85 V and 1.05 V on rising edge after 20us step
+meas tran t_sr_up_lo when v(VOUT) = 0.85 rise=1 td=20u
+meas tran t_sr_up_hi when v(VOUT) = 1.05 rise=1 td=20u
+let sr_up = (1.05 - 0.85) / (t_sr_up_hi - t_sr_up_lo) * 1e-6
+print sr_up
+
+meas tran t_sr_dn_hi when v(VOUT) = 1.05 fall=1 td=45u
+meas tran t_sr_dn_lo when v(VOUT) = 0.85 fall=1 td=45u
+let sr_dn = (1.05 - 0.85) / (t_sr_dn_lo - t_sr_dn_hi) * 1e-6
+print sr_dn
+
+meas tran v_settle_high MAX v(VOUT) FROM=40u TO=45u
+meas tran v_settle_low  MIN v(VOUT) FROM=65u TO=75u
+print v_settle_high v_settle_low
+
+write {cicname}.raw
+quit
+.endc
+.end
