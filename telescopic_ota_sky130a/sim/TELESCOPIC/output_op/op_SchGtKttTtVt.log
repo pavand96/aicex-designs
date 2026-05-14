@@ -26,7 +26,7 @@ option SCALE: Scale is set to 1e-06 for instance and model parameters
 Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
 
 Using transient initial conditions
- Reference value :  1.00000e-11doAnalyses: TRAN:  Timestep too small; time = 1.12096e-11, timestep = 1.25e-21: trouble with node "v.xdut.vbias2#branch"
+ Reference value :  1.00000e-11doAnalyses: TRAN:  Timestep too small; time = 1.16043e-11, timestep = 1.25e-21: trouble with node "lbias#branch"
 
 
 tran simulation(s) aborted
@@ -38,65 +38,65 @@ Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
 No. of Data Rows : 1
 v(ibias) = 7.829630e-01
 v(vout) = 9.000000e-01
-v(xdut.ntail) = 3.557819e-01
-v(xdut.nd1) = 5.808134e-01
-v(xdut.nd2) = 5.785278e-01
-v(xdut.na) = 1.132852e+00
-v(xdut.np2) = 1.336245e+00
+v(xdut.ntail) = 3.543930e-01
+v(xdut.nd1) = 4.802571e-01
+v(xdut.nd2) = 4.785006e-01
+v(xdut.na) = 1.132803e+00
+v(xdut.np2) = 1.409110e+00
 ==== M1 (input pair) ====
-@m.xdut.xm1.msky130_fd_pr__nfet_01v8_lvt[gm] = 3.826986e-04
-@m.xdut.xm1.msky130_fd_pr__nfet_01v8_lvt[gds] = 3.390761e-06
-@m.xdut.xm1.msky130_fd_pr__nfet_01v8_lvt[id] = 2.000392e-05
-@m.xdut.xm1.msky130_fd_pr__nfet_01v8_lvt[vgs] = 5.442181e-01
-@m.xdut.xm1.msky130_fd_pr__nfet_01v8_lvt[vds] = 2.250315e-01
-@m.xdut.xm1.msky130_fd_pr__nfet_01v8_lvt[vth] = 5.090417e-01
+@m.xdut.xm1.msky130_fd_pr__nfet_01v8_lvt[gm] = 3.770835e-04
+@m.xdut.xm1.msky130_fd_pr__nfet_01v8_lvt[gds] = 1.384994e-05
+@m.xdut.xm1.msky130_fd_pr__nfet_01v8_lvt[id] = 2.001255e-05
+@m.xdut.xm1.msky130_fd_pr__nfet_01v8_lvt[vgs] = 5.456070e-01
+@m.xdut.xm1.msky130_fd_pr__nfet_01v8_lvt[vds] = 1.258641e-01
+@m.xdut.xm1.msky130_fd_pr__nfet_01v8_lvt[vth] = 5.087976e-01
 ==== M3 (NMOS cascode left) ====
-@m.xdut.xm3.msky130_fd_pr__nfet_01v8[gm] = 2.782318e-04
-@m.xdut.xm3.msky130_fd_pr__nfet_01v8[gds] = 2.495192e-06
-@m.xdut.xm3.msky130_fd_pr__nfet_01v8[vds] = 5.520385e-01
-@m.xdut.xm3.msky130_fd_pr__nfet_01v8[vgs] = 8.191866e-01
-@m.xdut.xm3.msky130_fd_pr__nfet_01v8[vth] = 7.259122e-01
+@m.xdut.xm3.msky130_fd_pr__nfet_01v8[gm] = 2.784353e-04
+@m.xdut.xm3.msky130_fd_pr__nfet_01v8[gds] = 2.170744e-06
+@m.xdut.xm3.msky130_fd_pr__nfet_01v8[vds] = 6.525459e-01
+@m.xdut.xm3.msky130_fd_pr__nfet_01v8[vgs] = 8.004521e-01
+@m.xdut.xm3.msky130_fd_pr__nfet_01v8[vth] = 7.069549e-01
 ==== M4 (NMOS cascode right - output) ====
-@m.xdut.xm4.msky130_fd_pr__nfet_01v8[gm] = 2.742282e-04
-@m.xdut.xm4.msky130_fd_pr__nfet_01v8[gds] = 4.573116e-06
-@m.xdut.xm4.msky130_fd_pr__nfet_01v8[vds] = 3.214722e-01
-@m.xdut.xm4.msky130_fd_pr__nfet_01v8[vgs] = 8.214722e-01
-@m.xdut.xm4.msky130_fd_pr__nfet_01v8[vth] = 7.254935e-01
+@m.xdut.xm4.msky130_fd_pr__nfet_01v8[gm] = 2.757381e-04
+@m.xdut.xm4.msky130_fd_pr__nfet_01v8[gds] = 3.236216e-06
+@m.xdut.xm4.msky130_fd_pr__nfet_01v8[vds] = 4.214994e-01
+@m.xdut.xm4.msky130_fd_pr__nfet_01v8[vgs] = 8.022087e-01
+@m.xdut.xm4.msky130_fd_pr__nfet_01v8[vth] = 7.066197e-01
 ==== M5 (PMOS cascode output) ====
-@m.xdut.xm5.msky130_fd_pr__pfet_01v8_lvt[gm] = 1.959274e-04
-@m.xdut.xm5.msky130_fd_pr__pfet_01v8_lvt[gds] = 4.970164e-06
-@m.xdut.xm5.msky130_fd_pr__pfet_01v8_lvt[vds] = 4.362452e-01
-@m.xdut.xm5.msky130_fd_pr__pfet_01v8_lvt[vgs] = 7.362452e-01
-@m.xdut.xm5.msky130_fd_pr__pfet_01v8_lvt[vth] = 5.665847e-01
+@m.xdut.xm5.msky130_fd_pr__pfet_01v8_lvt[gm] = 1.936729e-04
+@m.xdut.xm5.msky130_fd_pr__pfet_01v8_lvt[gds] = 4.067081e-06
+@m.xdut.xm5.msky130_fd_pr__pfet_01v8_lvt[vds] = 5.091097e-01
+@m.xdut.xm5.msky130_fd_pr__pfet_01v8_lvt[vgs] = 7.206456e-01
+@m.xdut.xm5.msky130_fd_pr__pfet_01v8_lvt[vth] = 5.493055e-01
 ==== M6 (PMOS mirror diode) ====
-@m.xdut.xm6.msky130_fd_pr__pfet_01v8_lvt[gm] = 1.744809e-04
-@m.xdut.xm6.msky130_fd_pr__pfet_01v8_lvt[gds] = 6.734222e-07
-@m.xdut.xm6.msky130_fd_pr__pfet_01v8_lvt[id] = 2.000390e-05
-@m.xdut.xm6.msky130_fd_pr__pfet_01v8_lvt[vds] = 6.671481e-01
-@m.xdut.xm6.msky130_fd_pr__pfet_01v8_lvt[vgs] = 6.671481e-01
+@m.xdut.xm6.msky130_fd_pr__pfet_01v8_lvt[gm] = 1.745294e-04
+@m.xdut.xm6.msky130_fd_pr__pfet_01v8_lvt[gds] = 6.736077e-07
+@m.xdut.xm6.msky130_fd_pr__pfet_01v8_lvt[id] = 2.001247e-05
+@m.xdut.xm6.msky130_fd_pr__pfet_01v8_lvt[vds] = 6.671970e-01
+@m.xdut.xm6.msky130_fd_pr__pfet_01v8_lvt[vgs] = 6.671970e-01
 @m.xdut.xm6.msky130_fd_pr__pfet_01v8_lvt[vth] = 4.492146e-01
 ==== M7 (PMOS mirror) ====
-@m.xdut.xm7.msky130_fd_pr__pfet_01v8_lvt[gm] = 1.730877e-04
-@m.xdut.xm7.msky130_fd_pr__pfet_01v8_lvt[gds] = 1.121684e-06
-@m.xdut.xm7.msky130_fd_pr__pfet_01v8_lvt[id] = 1.983518e-05
-@m.xdut.xm7.msky130_fd_pr__pfet_01v8_lvt[vds] = 4.637548e-01
-@m.xdut.xm7.msky130_fd_pr__pfet_01v8_lvt[vgs] = 6.671481e-01
+@m.xdut.xm7.msky130_fd_pr__pfet_01v8_lvt[gm] = 1.719995e-04
+@m.xdut.xm7.msky130_fd_pr__pfet_01v8_lvt[gds] = 1.744644e-06
+@m.xdut.xm7.msky130_fd_pr__pfet_01v8_lvt[id] = 1.974269e-05
+@m.xdut.xm7.msky130_fd_pr__pfet_01v8_lvt[vds] = 3.908903e-01
+@m.xdut.xm7.msky130_fd_pr__pfet_01v8_lvt[vgs] = 6.671970e-01
 @m.xdut.xm7.msky130_fd_pr__pfet_01v8_lvt[vth] = 4.492146e-01
 ==== Output impedance budget ====
-gm1 = 3.826986e-04
-gm4 = 2.742282e-04
-gm5 = 1.959274e-04
-ro2 = 2.915079e+05
-ro4 = 2.186693e+05
-ro5 = 2.012006e+05
-ro7 = 8.915163e+05
-rdn = 1.748035e+07
-rup = 3.514420e+07
+gm1 = 3.770835e-04
+gm4 = 2.757381e-04
+gm5 = 1.936729e-04
+ro2 = 6.873739e+04
+ro4 = 3.090029e+05
+ro5 = 2.458766e+05
+ro7 = 5.731828e+05
+rdn = 5.856690e+06
+rup = 2.729475e+07
 rl = 1.000000e+05
-rout = 9.915066e+04
-avo = 3.794482e+01
-avo_db = 3.158305e+01
-i_vdd = 3.983907e-05
-p_supply = 7.171033e-05
+rout = 9.796831e+04
+avo = 3.694224e+01
+avo_db = 3.135046e+01
+i_vdd = 4.975516e-05
+p_supply = 8.955929e-05
 ASCII raw file "op_SchGtKttTtVt.raw"
 ngspice-42 done

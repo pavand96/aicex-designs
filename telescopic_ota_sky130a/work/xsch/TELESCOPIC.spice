@@ -40,11 +40,13 @@ XM4     VOUT   Vb1    nd2    VSS  sky130_fd_pr__nfet_01v8  L=1 W=10 nf=4 m=1
 * Result: small systematic offset (Vsd_M6 != Vsd_M7). Acceptable.
 XM5     VOUT   Vb2    np2    VDD  sky130_fd_pr__pfet_01v8_lvt  L=1 W=20 nf=4 m=1
 
-* ---- PMOS current mirror (LVT, LONG L for high ro, 1:1) -----------
-* Sized for low |Vov| (~0.16V) at 50 uA per branch -> high |Vds| margin
-* W*nf/L = 80*2/4 = 40 -> |Vov| = sqrt(2*50u/(Kp*40)) ~ 0.22 V (Kp~25 for LVT)
-XM6     na     na     VDD    VDD  sky130_fd_pr__pfet_01v8_lvt  L=4 W=80 nf=2 m=1
-XM7     np2    na     VDD    VDD  sky130_fd_pr__pfet_01v8_lvt  L=4 W=80 nf=2 m=1
+* ---- PMOS current mirror (LVT, 1:1) -------------------------------
+* Sized so |Vov| ~ 0.4V at 20 uA per branch (eff W/L = 10).
+* Larger |Vov| keeps |Vsg| ~ 0.9V even at fast/hot Kff_Th, preventing the
+* mirror from collapsing into deep subthreshold (na hugging VDD), which
+* was the v3 corner failure mode.
+XM6     na     na     VDD    VDD  sky130_fd_pr__pfet_01v8_lvt  L=4 W=20 nf=2 m=1
+XM7     np2    na     VDD    VDD  sky130_fd_pr__pfet_01v8_lvt  L=4 W=20 nf=2 m=1
 
 * ---- Cascode bias voltages -----------------------------------------
 VBIAS1  Vb1    VSS    dc 1.40

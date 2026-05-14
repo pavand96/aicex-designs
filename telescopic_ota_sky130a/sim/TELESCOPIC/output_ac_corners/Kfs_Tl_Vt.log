@@ -34,51 +34,51 @@ Note: Starting source stepping
 
 No. of Data Rows : 1
 v(vout) = 9.000000e-01
-v(xdut.na) = 1.173136e+00
-v(xdut.np2) = 1.321960e+00
-v(xdut.nd1) = 5.231873e-01
-v(xdut.nd2) = 5.211775e-01
-v(xdut.ntail) = 2.961532e-01
+v(xdut.na) = 9.772836e-01
+v(xdut.np2) = 1.321409e+00
+v(xdut.nd1) = 5.218437e-01
+v(xdut.nd2) = 5.211709e-01
+v(xdut.ntail) = 2.961484e-01
 Doing analysis at TEMP = -40.000000 and TNOM = 27.000000
 
 
 No. of Data Rows : 901
-dc_gain_db          =  7.785115e+01
-fgbw                =  2.059358e+07
-phase_ugf           =  -1.329925e+02
-f3db                =  4.410491e+03
-f_40db              =  3.450387e+05
+dc_gain_db          =  7.570957e+01
+fgbw                =  2.548620e+07
+phase_ugf           =  -1.374500e+02
+f3db                =  5.596127e+03
+f_40db              =  3.422347e+05
 
 ================ OPEN-LOOP AC SUMMARY ================
-dc_gain_db = 7.785115e+01
-f3db = 4.410491e+03
-fgbw = 2.059358e+07
-phase_ugf = -1.32993e+02
-pm = 4.700750e+01
-f_40db = 3.450387e+05
-mag_1 = 7.785115e+01
-mag_10 = 7.784895e+01
-mag_100 = 7.763446e+01
-mag_1k = 6.998618e+01
-mag_10k = 5.075270e+01
-mag_100k = 3.072952e+01
-mag_1m = 8.626792e+00
-mag_10m = -1.29711e+01
-ph_1 = -1.13315e-01
-ph_10 = -1.29457e+00
-ph_100 = -1.27495e+01
-ph_1k = -6.61915e+01
-ph_10k = -8.78842e+01
-ph_100k = -9.38876e+01
-ph_1m = -1.21628e+02
-ph_10m = -1.65016e+02
+dc_gain_db = 7.570957e+01
+f3db = 5.596127e+03
+fgbw = 2.548620e+07
+phase_ugf = -1.37450e+02
+pm = 4.255000e+01
+f_40db = 3.422347e+05
+mag_1 = 7.570957e+01
+mag_10 = 7.570821e+01
+mag_100 = 7.557371e+01
+mag_1k = 6.949981e+01
+mag_10k = 5.067422e+01
+mag_100k = 3.068054e+01
+mag_1m = 1.004643e+01
+mag_10m = -1.26759e+01
+ph_1 = -8.92995e-02
+ph_10 = -1.02028e+00
+ph_100 = -1.01104e+01
+ph_1k = -6.07354e+01
+ph_10k = -8.70423e+01
+ph_100k = -9.22061e+01
+ph_1m = -1.13639e+02
+ph_10m = -1.73382e+02
 ASCII raw file "ac_SchGtKfsTlVt.raw"
 ngspice-42 done
-[32mCorner simulation time: 0:00:01.267768[0m
+[32mCorner simulation time: 0:00:01.173382[0m
 Warning: Optran step size potentially too large.
 ac_SchGtKfsTlVt.meas: No such file or directory
 [32mWriting output_ac/ac_SchGtKfsTlVt.yaml[0m
-[32mTotal simulation time: 0:00:01.288124[0m
+[32mTotal simulation time: 0:00:01.193547[0m
 | name            | time                     | type   |
 |-----------------|--------------------------|--------|
-| ac_SchGtKfsTlVt | Wed May 13 22:16:28 2026 | Sch    |
+| ac_SchGtKfsTlVt | Wed May 13 22:27:57 2026 | Sch    |

@@ -10,9 +10,6 @@ Warning: m=xx on .subckt line will override multiplier m hierarchy!
 
 Using KLU as Direct Linear Solver
 Note: Starting source stepping
-Warning: source stepping failed
-Note: Transient op started
-Note: Transient op finished successfully
 ******
 ** ngspice-42 : Circuit level simulation program
 ** Compiled with KLU Direct Linear Solver
@@ -34,68 +31,54 @@ Doing analysis at TEMP = 125.000000 and TNOM = 27.000000
 
  Reference value :  0.00000e+00Using KLU as Direct Linear Solver
 Note: Starting source stepping
-Warning: source stepping failed
-Note: Transient op started
-Note: Transient op finished successfully
 
 No. of Data Rows : 1
-v(vout) = 2.085227e-01
-v(xdut.na) = 1.729001e+00
-v(xdut.np2) = 8.602379e-01
-v(xdut.nd1) = 5.077550e-01
-v(xdut.nd2) = 2.613824e-01
-v(xdut.ntail) = 3.128147e-01
+v(vout) = 9.000000e-01
+v(xdut.na) = 1.112649e+00
+v(xdut.np2) = 1.158017e+00
+v(xdut.nd1) = 6.364075e-01
+v(xdut.nd2) = 6.331733e-01
+v(xdut.ntail) = 4.192091e-01
 Doing analysis at TEMP = 125.000000 and TNOM = 27.000000
 
 
 No. of Data Rows : 901
-dc_gain_db          =  -1.538431e+01
-
-Error: measure  fgbw  when(WHEN) : out of interval
- meas ac fgbw when mag_db=0 cross=1 failed!
-
-
-Error: measure  phase_ugf  find(AT) : out of interval
-Warning from checkvalid: vector phase_ugf is not available or has zero length.
-Error: RHS "phase_ugf + 180" invalid
- meas ac phase_ugf find ph_deg when mag_db=0 cross=1 failed!
-
-f3db                =  2.666722e+08
-
-Error: measure  f_40db  when(WHEN) : out of interval
-Warning from checkvalid: vector fgbw is not available or has zero length.
-Warning from checkvalid: vector phase_ugf is not available or has zero length.
-Warning from checkvalid: vector pm is not available or has zero length.
-Warning from checkvalid: vector f_40db is not available or has zero length.
- meas ac f_40db when mag_db=40 cross=1 failed!
-
+dc_gain_db          =  6.340398e+01
+fgbw                =  1.898812e+07
+phase_ugf           =  -1.396110e+02
+f3db                =  1.687232e+04
+f_40db              =  2.496875e+05
 
 ================ OPEN-LOOP AC SUMMARY ================
-dc_gain_db = -1.53843e+01
-f3db = 2.666722e+08
-mag_1 = -1.53843e+01
-mag_10 = -1.53843e+01
-mag_100 = -1.53843e+01
-mag_1k = -1.53842e+01
-mag_10k = -1.53739e+01
-mag_100k = -1.47749e+01
-mag_1m = -1.43302e+01
-mag_10m = -1.54764e+01
-ph_1 = -9.18832e-06
-ph_10 = -1.02485e-04
-ph_100 = -1.02591e-03
-ph_1k = -1.02651e-02
-ph_10k = -1.08466e-01
-ph_100k = -4.45123e+00
-ph_1m = -7.74457e+01
-ph_10m = -1.88644e+02
+dc_gain_db = 6.340398e+01
+f3db = 1.687232e+04
+fgbw = 1.898812e+07
+phase_ugf = -1.39611e+02
+pm = 4.038900e+01
+f_40db = 2.496875e+05
+mag_1 = 6.340398e+01
+mag_10 = 6.340383e+01
+mag_100 = 6.338882e+01
+mag_1k = 6.210189e+01
+mag_10k = 4.784551e+01
+mag_100k = 2.795513e+01
+mag_1m = 7.000612e+00
+mag_10m = -1.46841e+01
+ph_1 = -2.96804e-02
+ph_10 = -3.38694e-01
+ph_100 = -3.38723e+00
+ph_1k = -3.06293e+01
+ph_10k = -8.07434e+01
+ph_100k = -9.24542e+01
+ph_1m = -1.20987e+02
+ph_10m = -1.91552e+02
 ASCII raw file "ac_SchGtKffThVt.raw"
 ngspice-42 done
-[32mCorner simulation time: 0:00:01.324540[0m
-[31mSimulation ac_SchGtKffThVt failed[0m
-[32mTotal simulation time: 0:00:01.338209[0m
-[93mSkipping post processing, one simulation failed[0m
-Error: measure  fgbw  when(WHEN) : out of interval
-Error: measure  phase_ugf  find(AT) : out of interval
-Error: RHS "phase_ugf + 180" invalid
-Error: measure  f_40db  when(WHEN) : out of interval
+[32mCorner simulation time: 0:00:01.206324[0m
+Warning: Optran step size potentially too large.
+ac_SchGtKffThVt.meas: No such file or directory
+[32mWriting output_ac/ac_SchGtKffThVt.yaml[0m
+[32mTotal simulation time: 0:00:01.229491[0m
+| name            | time                     | type   |
+|-----------------|--------------------------|--------|
+| ac_SchGtKffThVt | Wed May 13 22:27:48 2026 | Sch    |
