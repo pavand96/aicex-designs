@@ -12,7 +12,8 @@ VVIP   VIP    0    dc {vcm} ac  0.5
 VVIN   VIN    0    dc {vcm} ac -0.5
 VVCM   VCM    0    dc {vcm}
 
-RIBIAS_TIE IBIAS VSS 1G
+* External bandgap-style current reference: 100 uA into IBIAS (sinks to VSS via diode)
+IBIAS_REF VDD IBIAS dc 100u
 
 * Static CMFB driver disabled - internal transistor CMFB now closed
 RCMFB_PROBE nVcmfb 0 1G
@@ -22,20 +23,12 @@ CLN    VON    VSS  10p
 
 .include ../xdut.spi
 
-.nodeset v(xdut.ntail) = 0.15
-.nodeset v(xdut.aneg)  = 0.57
-.nodeset v(xdut.apos)  = 0.57
-.nodeset v(xdut.bneg)  = 1.59
-.nodeset v(xdut.bpos)  = 1.59
-.nodeset v(vop)        = 0.78
-.nodeset v(von)        = 0.78
-.nodeset v(xdut.vbd)   = 0.93
-.nodeset v(xdut.vbc)   = 0.73
-.nodeset v(IBIAS)      = 0.86
-.nodeset v(nvcmfb)     = 0.93
-.nodeset v(xdut.v_cms) = 0.78
-.nodeset v(xdut.n_diode) = 0.55
-.nodeset v(xdut.stail_cm) = 1.50
+* Minimal corner-portable bootstrap: only hint topological roles, let CMFB settle.
+.nodeset v(vop)            = {vcm}
+.nodeset v(von)            = {vcm}
+.nodeset v(xdut.v_cms)     = {vcm}
+.nodeset v(xdut.stail_cm)  = 1.5
+.nodeset v(xdut.n_diode)   = 0.55
 
 .save all
 

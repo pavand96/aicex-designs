@@ -35,23 +35,32 @@
 *   VOP   ≈ 0.90 V (CMFB)
 * =====================================================================
 
-* ---- Bias references (diode-connected mirrors) ----
-* Reference current path Iref = 100uA each via resistor sized to drop
-* (VDD - Vgs_diode). Diode size MATCHES the mirroring transistor so
-* current ratio is 1:1 per branch (no W ratio scaling errors).
+* ---- Bias references: WIDE-SWING PMOS cascode mirror, resistor-free.
+* External IBIAS = 100 uA from bandgap, sinks into XM_REF (NMOS diode @ VSS).
+* Two NMOS mirror legs pull 100 uA each through two PMOS-LVT diodes (separate,
+* not stacked — stacking 2 Vsg would eat the whole 1.8 V supply).
 *
-* Tail bias: NMOS diode @ 100uA -> mirror x2 to ITAIL (200uA total)
+*   XMD_REF (W = W_main)            -> VbD = VDD - |Vth| - |Vov_D|
+*   XMC_REF (W = W_main/n, n tuned) -> VbC = VDD - |Vth| - |Vov_C|, with
+*                                       |Vov_C| > |Vov_D| so VbC < VbD by ~|Vov_D|
+*
+* Sized for |Vov_D| ~ 0.25 V at 100 uA: W_main = 40, nf=8.
+*
+* NMOS master diode @ 100 uA
 XM_REF   IBIAS  IBIAS  VSS    VSS  sky130_fd_pr__nfet_01v8  L=1 W=10 nf=2 m=1
-RREF_N   VDD    IBIAS  10k
+
+* Tail mirror: x2 -> ITAIL (200 uA total, ~100 uA / branch)
 XM_TAIL  ntail  IBIAS  VSS    VSS  sky130_fd_pr__nfet_01v8  L=1 W=20 nf=4 m=1
 
-* MD bias: PMOS-LVT diode @ 100uA, mirror x1 to MD1 and MD2 (100uA each)
+* NMOS leg 1 (100 uA into VbD)
+XM_NL1   VbD    IBIAS  VSS    VSS  sky130_fd_pr__nfet_01v8  L=1 W=10 nf=2 m=1
+* PMOS-LVT diode (W_main) -> VbD
 XMD_REF  VbD    VbD    VDD    VDD  sky130_fd_pr__pfet_01v8_lvt  L=1 W=20 nf=4 m=1
-RREF_PD  VbD    VSS    9.5k
 
-* MC bias: PMOS-LVT diode @ 100uA, sized smaller so Vsg larger (cascode strong)
+* NMOS leg 2 (100 uA into VbC)
+XM_NL2   VbC    IBIAS  VSS    VSS  sky130_fd_pr__nfet_01v8  L=1 W=10 nf=2 m=1
+* PMOS-LVT diode (smaller W) -> larger Vsg -> VbC < VbD (cascode bias)
 XMC_REF  VbC    VbC    VDD    VDD  sky130_fd_pr__pfet_01v8_lvt  L=1 W=8 nf=2 m=1
-RREF_PC  VbC    VSS    8k
 
 XMI1     APOS   VIP    ntail  VSS  sky130_fd_pr__nfet_01v8  L=2 W=40 nf=8 m=1
 XMI2     ANEG   VIN    ntail  VSS  sky130_fd_pr__nfet_01v8  L=2 W=40 nf=8 m=1
@@ -59,7 +68,7 @@ XMI2     ANEG   VIN    ntail  VSS  sky130_fd_pr__nfet_01v8  L=2 W=40 nf=8 m=1
 XMC1     APOS   VbC    BPOS   VDD  sky130_fd_pr__pfet_01v8_lvt  L=1 W=20 nf=4 m=1
 XMC2     ANEG   VbC    BNEG   VDD  sky130_fd_pr__pfet_01v8_lvt  L=1 W=20 nf=4 m=1
 
-* PMOS top current source (LVT) L=1, W=20 nf=4: matches diode 1:1
+* PMOS top current source (LVT) — matched to XMD_REF (W=20) for 1:1 mirror
 XMD1     BPOS   VbD    VDD    VDD  sky130_fd_pr__pfet_01v8_lvt  L=1 W=20 nf=4 m=1
 XMD2     BNEG   VbD    VDD    VDD  sky130_fd_pr__pfet_01v8_lvt  L=1 W=20 nf=4 m=1
 

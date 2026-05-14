@@ -22,7 +22,7 @@ RFP    VOP    VIN  10k
 R1N    srcn   VIP  10k
 RFN    VON    VIP  10k
 
-RIBIAS_TIE  IBIAS    VSS 1G
+IBIAS_REF  VDD    IBIAS dc 100u
 RCMFB_PROBE nVcmfb   0   1G
 
 CLP    VOP    VSS  10p

@@ -15,12 +15,89 @@ Two-stage fully-differential amplifier with Ahuja (cascoded-Miller) compensation
 
 | Metric        | Measured     | Spec         | Status |
 |---------------|--------------|--------------|--------|
-| DC gain       | 81.4 dB      | 100 dB       | ✗ (see below) |
-| GBW           | 8.88 MHz     | > 5 MHz      | ✓ |
-| Phase margin  | 56.3°        | > 50°        | ✓ |
+| DC gain       | 80.8 dB      | 100 dB       | ✗ (see below) |
+| GBW           | 4.7 MHz      | > 5 MHz      | ✗ (marginal, see below) |
+| Phase margin  | 51°          | > 50°        | ✓ |
 | Slew rate avg | 5.33 V/µs    | > 5 V/µs     | ✓ |
 | Output swing  | ~1.1 Vpp diff| 1 V          | ✓ |
 | Power         | 1.39 mW      | < 2 mW       | ✓ |
+
+Note: GBW dropped from 8.88 MHz to 4.68 MHz when resistor refs were
+replaced with NMOS current mirrors (branch current dropped to ~73 µA
+because XM_TAIL Vds is small → mirror in triode-edge region). The
+resistor-ref design hit 8.88 MHz @ 81.4 dB but was not PVT-portable.
+
+## Bias generator evolution
+
+| Version | Topology | TT result | Notes |
+|---------|----------|-----------|-------|
+| v1 | Resistor refs (RREF_N=10k, RREF_PD=9.5k, RREF_PC=8k from rails) | 81.4 dB / 8.88 MHz | Best TT, but bias currents track 1/R → V_DD-dependent. |
+| v2 | NMOS current mirror from external IBIAS=100 µA (bandgap) + simple PMOS diodes | 80.8 dB / 4.68 MHz | No resistors. |
+| v3 | Wide-swing (separate-leg) PMOS cascode mirror | 80.8 dB / 4.68 MHz | Cleanest bias structure. |
+
+v3 (wide-swing) is the committed version. Two NMOS legs each pull 100 µA
+through a PMOS-LVT diode (XMD_REF, W=20) and a smaller diode (XMC_REF, W=8
+for stronger \|Vsg\| → cascode bias). Stacked-diode wide-swing was tried
+first but eats 2×\|Vsg\| (~1.8 V) which leaves no room for the NMOS sink —
+separate-leg is the only viable wide-swing in 1.8 V supply.
+
+## Corner sweep results (PVT)
+
+Full P×T×V sweep (5 process × 3 (T,V) corners = 15 corners) on the
+v3 (wide-swing) bias version:
+
+| Process | T,V | DC | GBW | PM |
+|---|---|---|---|---|
+| Ktt | Tt Vt | **80.8 dB** | 4.68 MHz | **51°** |
+| Ktt | Th Vh | -40.5 dB | 1.4 MHz | unstable |
+| Ktt | Tl Vl | 5.2 dB | 0.56 MHz | overdamped |
+| Kss | Tt Vt | -7.2 dB | 4.4 MHz | unstable |
+| Kss | Th Vh | 46.5 dB | 2.1 MHz | unstable |
+| Kss | Tl Vl | broken | — | — |
+| Kff | Tt Vt | 21.6 dB | 2.9 MHz | overdamped |
+| Kff | Th Vh | 33.0 dB | 6.9 MHz | 77° |
+| Kff | Tl Vl | 22.3 dB | 2.4 MHz | overdamped |
+| Ksf | * * | ~25 dB | ~2 MHz | overdamped |
+| Kfs | * * | 12–52 dB | 2–6 MHz | unstable |
+
+**Only Ktt @ Tt @ Vt is functional.** The wide-swing bias change
+produced no meaningful corner improvement, which proved that the failure
+is structural, not biasing.
+
+## Why corners fail (structural diagnosis)
+
+TT bias point breakdown (1.8 V supply):
+
+```
+VDD - |Vsg_XMD| - |Vds_XMC| - Vds_XMI - Vds_TAIL = 1.8 V
+1.8 - 0.85      - 0.20      - 0.43    - 0.14     ≈ 1.62 V used
+                                                  -> 0.18 V slack
+```
+
+Across PVT, the slack is consumed:
+- **Vth shift ±100 mV** (Kss/Kff process): directly modulates \|Vsg_XMD\|
+  which already eats 0.85 V of the supply. ±100 mV is larger than the
+  200 mV cascode saturation margin.
+- **VDD shift ±90 mV** (Vh/Vl): on top of Vth shifts, compresses or expands
+  the entire stack.
+- **Temperature**: shifts gm and Vth in opposite directions, breaks the
+  carefully tuned XMD/XMC overdrive ratio.
+
+Wide-swing biasing only helps when the failure is bias-point inaccuracy.
+Here the failure is **headroom collapse** — no biasing scheme can recover
+lost Vds margin.
+
+## What it would take to make corner-robust
+
+1. **Folded-cascode topology** (NMOS input + NMOS cascode at bottom).
+   1.8 V works because NMOS Vth is in series with VSS, not VDD; PMOS
+   becomes the simple top current source (no cascode in stack).
+2. **HVT NMOS input pair** to free up Vth headroom from VSS side.
+3. **Higher VDD** (3.3 V) — not allowed by spec.
+
+All three are topology changes — outside the scope of this frozen Ahuja
+design.
+
 
 ## Gain-push experiments (why 81.4 dB is the practical ceiling)
 

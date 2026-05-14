@@ -6,24 +6,24 @@
 
 .param mc_mm_switch=0
 .param mc_pr_switch=0
-.include "/opt/pdk/share/pdk/sky130A/libs.ref/sky130_fd_pr/spice/sky130_fd_pr__nfet_01v8__tt.pm3.spice"
+.include "/opt/pdk/share/pdk/sky130A/libs.ref/sky130_fd_pr/spice/sky130_fd_pr__nfet_01v8__fs.pm3.spice"
 .include "/opt/pdk/share/pdk/sky130A/libs.ref/sky130_fd_pr/spice/sky130_fd_pr__nfet_01v8__mismatch.corner.spice"
-.include "/opt/pdk/share/pdk/sky130A/libs.ref/sky130_fd_pr/spice/sky130_fd_pr__nfet_01v8_lvt__tt.corner.spice"
+.include "/opt/pdk/share/pdk/sky130A/libs.ref/sky130_fd_pr/spice/sky130_fd_pr__nfet_01v8_lvt__fs.corner.spice"
 .include "/opt/pdk/share/pdk/sky130A/libs.ref/sky130_fd_pr/spice/sky130_fd_pr__nfet_01v8_lvt__mismatch.corner.spice"
-.include "/opt/pdk/share/pdk/sky130A/libs.ref/sky130_fd_pr/spice/sky130_fd_pr__pfet_01v8__tt.corner.spice"
+.include "/opt/pdk/share/pdk/sky130A/libs.ref/sky130_fd_pr/spice/sky130_fd_pr__pfet_01v8__fs.corner.spice"
 .include "/opt/pdk/share/pdk/sky130A/libs.ref/sky130_fd_pr/spice/sky130_fd_pr__pfet_01v8__mismatch.corner.spice"
-.include "/opt/pdk/share/pdk/sky130A/libs.ref/sky130_fd_pr/spice/sky130_fd_pr__pfet_01v8_lvt__tt.corner.spice"
+.include "/opt/pdk/share/pdk/sky130A/libs.ref/sky130_fd_pr/spice/sky130_fd_pr__pfet_01v8_lvt__fs.corner.spice"
 .include "/opt/pdk/share/pdk/sky130A/libs.ref/sky130_fd_pr/spice/sky130_fd_pr__pfet_01v8_lvt__mismatch.corner.spice"
-.include "/opt/pdk/share/pdk/sky130A/libs.tech/ngspice/corners/tt/nonfet.spice"
+.include "/opt/pdk/share/pdk/sky130A/libs.tech/ngspice/corners/fs/nonfet.spice"
 .include "/opt/pdk/share/pdk/sky130A/libs.ref/sky130_fd_pr/spice/sky130_fd_pr__npn_05v5__t.corner.spice"
 .include "/opt/pdk/share/pdk/sky130A/libs.tech/ngspice/all.spice"
 .include "/opt/pdk/share/pdk/sky130A/libs.tech/ngspice/r+c/res_typical__cap_typical.spice"
 .include "/opt/pdk/share/pdk/sky130A/libs.tech/ngspice/r+c/res_typical__cap_typical__lin.spice"
-.include "/opt/pdk/share/pdk/sky130A/libs.tech/ngspice/corners/tt/specialized_cells.spice"
+.include "/opt/pdk/share/pdk/sky130A/libs.tech/ngspice/corners/fs/specialized_cells.spice"
 
-.lib "../../../tech/ngspice/temperature.spi" Tt
+.lib "../../../tech/ngspice/temperature.spi" Tl
 
-.lib "../../../tech/ngspice/supply.spi" Vt
+.lib "../../../tech/ngspice/supply.spi" Vl
 
 *TB AHUJA_FDA — open-loop AC: DC gain, UGF, PM, GM
 .include ../../../work/xsch/AHUJA_FDA.spice
@@ -39,7 +39,8 @@ VVIP   VIP    0    dc {vcm} ac  0.5
 VVIN   VIN    0    dc {vcm} ac -0.5
 VVCM   VCM    0    dc {vcm}
 
-RIBIAS_TIE IBIAS VSS 1G
+* External bandgap-style current reference: 100 uA into IBIAS (sinks to VSS via diode)
+IBIAS_REF VDD IBIAS dc 100u
 
 * Static CMFB driver disabled - internal transistor CMFB now closed
 RCMFB_PROBE nVcmfb 0 1G
@@ -49,20 +50,12 @@ CLN    VON    VSS  10p
 
 .include ../xdut.spi
 
-.nodeset v(xdut.ntail) = 0.15
-.nodeset v(xdut.aneg)  = 0.57
-.nodeset v(xdut.apos)  = 0.57
-.nodeset v(xdut.bneg)  = 1.59
-.nodeset v(xdut.bpos)  = 1.59
-.nodeset v(vop)        = 0.78
-.nodeset v(von)        = 0.78
-.nodeset v(xdut.vbd)   = 0.93
-.nodeset v(xdut.vbc)   = 0.73
-.nodeset v(IBIAS)      = 0.86
-.nodeset v(nvcmfb)     = 0.93
-.nodeset v(xdut.v_cms) = 0.78
-.nodeset v(xdut.n_diode) = 0.55
-.nodeset v(xdut.stail_cm) = 1.50
+* Minimal corner-portable bootstrap: only hint topological roles, let CMFB settle.
+.nodeset v(vop)            = {vcm}
+.nodeset v(von)            = {vcm}
+.nodeset v(xdut.v_cms)     = {vcm}
+.nodeset v(xdut.stail_cm)  = 1.5
+.nodeset v(xdut.n_diode)   = 0.55
 
 .save all
 

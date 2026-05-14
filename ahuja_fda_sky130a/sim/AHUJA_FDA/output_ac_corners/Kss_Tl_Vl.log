@@ -1,0 +1,154 @@
+[32mAvailable replacements {cic(runsim|runmeas|corner|index|testbench|pyscript|rundir|sha|shas|oldsha|name|oname)}[0m
+[32mReplacing {VCM} = 0.9[0m
+[32mRunning ac_SchGtKssTlVl[0m
+Warning: Optran step size potentially too large.
+ERROR: (external)  no graphics interface;
+ please check if X-server is running,
+ or ngspice is compiled properly (see INSTALL)
+Warning: m=xx on .subckt line will override multiplier m hierarchy!
+
+Using KLU as Direct Linear Solver
+Note: Starting spice3 gmin stepping
+Warning: spice3 gmin stepping failed
+Note: Transient op started
+Warning: singular matrix:  check node vss#branch
+
+Warning: singular matrix:  check node vss#branch
+
+Warning: singular matrix:  check node vss#branch
+
+Warning: singular matrix:  check node vss#branch
+
+Warning: singular matrix:  check node vss#branch
+
+Warning: singular matrix:  check node vss#branch
+
+Error: Transient op failed, timestep too small
+
+
+Error: The operating point could not be simulated successfully.
+    Any of the following steps may fail.!
+
+doAnalyses: OP:  Timestep too small; cause unrecorded.
+
+
+op simulation(s) aborted
+Using KLU as Direct Linear Solver
+Note: Starting spice3 gmin stepping
+Warning: spice3 gmin stepping failed
+Note: Transient op started
+Warning: singular matrix:  check node vss#branch
+
+Warning: singular matrix:  check node vss#branch
+
+Warning: singular matrix:  check node vss#branch
+
+Warning: singular matrix:  check node vss#branch
+
+Warning: singular matrix:  check node vss#branch
+
+Warning: singular matrix:  check node vss#branch
+
+Error: Transient op failed, timestep too small
+
+
+Error: The operating point could not be simulated successfully.
+    Any of the following steps may fail.!
+
+******
+** ngspice-42 : Circuit level simulation program
+** Compiled with KLU Direct Linear Solver
+** The U. C. Berkeley CAD Group
+** Copyright 1985-1994, Regents of the University of California.
+** Copyright 2001-2023, The ngspice team.
+** Please get your ngspice manual from https://ngspice.sourceforge.io/docs.html
+** Please file your bug-reports at http://ngspice.sourceforge.net/bugrep.html
+** Creation Date: Sun Mar 31 20:15:14 UTC 2024
+******
+
+Note: Compatibility modes selected: hs a
+
+
+Circuit: *cicsimgen ac
+
+option SCALE: Scale is set to 1e-06 for instance and model parameters
+Doing analysis at TEMP = -40.000000 and TNOM = 27.000000
+
+
+DC solution failed -
+
+Last Node Voltages
+------------------
+
+Node                                   Last Voltage        Previous Iter
+----                                   ------------        -------------
+vss                                               0                 -nan
+vdd                                             1.7                  nan
+vip                                             0.9                 -nan
+vin                                             0.9                 -nan
+vcm                                             0.9                  nan
+ibias                                      0.943271                 -nan
+nvcmfb                                    -0.958247                 -nan
+vop                                         7.26314                 -nan
+von                                         7.26314                 -nan
+xdut.ntail                                 0.111765                 -nan
+xdut.vbd                                    0.67031                  nan
+xdut.vbc                                    5.21204                  nan
+xdut.apos                                   6.35099                  nan
+xdut.aneg                                   6.35099                  nan
+xdut.bpos                                  -2.85434                 -nan
+xdut.bneg                                  -2.85434                 -nan
+xdut.v_cms                                  2.78026                  nan
+xdut.stail_cm                               2.18177                  nan
+xdut.n_diode                             -0.0367013                 -nan
+vvcm#branch                            7.91623e+292                  0.9 *
+vvin#branch                            5.34457e+294                  0.9 *
+vvip#branch                            5.34457e+294                  0.9 *
+vdd#branch                            -1.31588e+294                  1.7 *
+vss#branch                            -9.45243e+294                    0 *
+
+Doing analysis at TEMP = -40.000000 and TNOM = 27.000000
+
+
+AC operating point failed -
+
+Last Node Voltages
+------------------
+
+Node                                   Last Voltage        Previous Iter
+----                                   ------------        -------------
+vss                                               0                 -nan
+vdd                                             1.7                  nan
+vip                                             0.9                 -nan
+vin                                             0.9                 -nan
+vcm                                             0.9                  nan
+ibias                                      0.943271                 -nan
+nvcmfb                                    -0.958247                 -nan
+vop                                         7.26314                 -nan
+von                                         7.26314                 -nan
+xdut.ntail                                 0.111765                 -nan
+xdut.vbd                                    0.67031                  nan
+xdut.vbc                                    5.21204                  nan
+xdut.apos                                   6.35099                  nan
+xdut.aneg                                   6.35099                  nan
+xdut.bpos                                  -2.85434                 -nan
+xdut.bneg                                  -2.85434                 -nan
+xdut.v_cms                             doAnalyses: AC:  Timestep too small; frequency = 0: cause unrecorded.
+
+
+ac simulation(s) aborted
+Warning from checkvalid: vector vop is not available or has zero length.
+Error: RHS "v(vop) - v(von)" invalid
+Warning from checkvalid: vector vod is not available or has zero length.
+Error: RHS "db(vod)" invalid
+Warning from checkvalid: vector vod is not available or has zero length.
+Error: RHS "180/pi * cph(vod)" invalid
+Error: measure limited to tran, dc, sp, or ac analysis
+Error: measure limited to tran, dc, sp, or ac analysis
+Error: measure limited to tran, dc, sp, or ac analysis
+Error: measure limited to tran, dc, sp, or ac analysis
+Error: measure limited to tran, dc, sp, or ac analysis
+Warning from checkvalid: vector ph_at_fgbw is not available or has zero length.
+Error: RHS "180 + ph_at_fgbw" invalid
+Warning from checkvalid: vector dc_gain_db is not available or has zero length.
+Error: no such vector mag_db

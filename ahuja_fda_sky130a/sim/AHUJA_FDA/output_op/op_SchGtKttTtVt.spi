@@ -38,7 +38,7 @@ VVIN   VIN    0    dc {vcm}
 VVCM   VCM    0    dc {vcm}
 * IBIAS reference is now internal (RREF_N from VDD inside subckt)
 * External pin tied off (high-Z probe)
-RIBIAS_TIE IBIAS VSS 1G
+IBIAS_REF VDD IBIAS dc 100u
 
 * Static nVcmfb driver disabled - internal transistor CMFB now drives nVcmfb
 RCMFB_PROBE nVcmfb 0 1G
