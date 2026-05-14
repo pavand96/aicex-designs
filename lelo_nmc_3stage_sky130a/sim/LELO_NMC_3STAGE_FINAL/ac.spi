@@ -1,6 +1,7 @@
 *TB LELO_NMC_3STAGE_FINAL - Open-loop AC via Middlebrook L-break
 .include ../../../work/xsch/LELO_NMC_3STAGE_FINAL.spice
 .option TNOM=27 GMIN=1e-12 reltol=1e-3 srcsteps=20 itl1=500 itl6=300 abstol=1e-12
+.option noopiter gminsteps=20
 
 .param vcm = 'vdda/2'
 .param vref_dc = 1.017
@@ -25,16 +26,29 @@ IIBIAS VSS    IBIAS  dc {ibias_val}
 CL     VOUT   VSS    {CL_val}
 .include ../xdut.spi
 
-.nodeset v(VOUT)        = {vcm}
-.nodeset v(VINN)        = {vcm}
-.nodeset v(xdut.vbn)    = 0.72
-.nodeset v(xdut.vbp)    = 1.20
-.nodeset v(xdut.vo1)    = 1.02
-.nodeset v(xdut.vo2)    = 0.90
-.nodeset v(xdut.vo1d)   = 1.08
-.nodeset v(xdut.vo2d)   = 0.70
+.nodeset v(VOUT)         = {vcm}
+.nodeset v(VINN)         = {vcm}
+.nodeset v(xdut.IBIAS)   = 0.70
+.nodeset v(xdut.vbp)     = 1.10
+.nodeset v(xdut.vbn_cas) = 0.90
+.nodeset v(xdut.vbp_cas) = 0.85
+.nodeset v(xdut.vo1)     = 0.95
+.nodeset v(xdut.vo2)     = 0.70
+.nodeset v(xdut.vo1d)    = 0.95
+.nodeset v(xdut.vo2d)    = 0.65
+.nodeset v(xdut.nfp)     = 1.45
+.nodeset v(xdut.nfn)     = 1.45
+.nodeset v(xdut.nlowp)   = 0.20
+.nodeset v(xdut.nlown)   = 0.20
+.nodeset v(xdut.ntail1)  = 0.18
+.nodeset v(xdut.ptail2)  = 1.62
 
 .save all
+
+.ic v(VOUT)={vcm}
+.ic v(VREF)={vcm}
+.ic v(xdut.vo1)=0.95
+.ic v(xdut.vo2)=1.03
 
 .control
 set num_threads=8
@@ -44,7 +58,7 @@ set filetype=ascii
 * Tran preamble to settle (DC unity-gain since L is short at DC).
 tran 100n 200u uic
 op
-print v(VOUT) v(VINN) v(xdut.vo1) v(xdut.vo2) v(xdut.vbn) v(xdut.vbp)
+print v(VOUT) v(VINN) v(xdut.vo1) v(xdut.vo2) v(xdut.IBIAS) v(xdut.vbp) v(xdut.vbn_cas) v(xdut.vbp_cas)
 
 ac dec 100 1 10G
 

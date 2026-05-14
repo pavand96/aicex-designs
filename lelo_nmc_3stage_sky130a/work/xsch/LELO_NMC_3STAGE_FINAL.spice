@@ -1,5 +1,5 @@
-* LELO_NMC_3STAGE_FINAL - 3-stage NMC opamp with current-mirror biases
-* SKY130A, 1.8 V supply, CL = 10 pF
+* LELO_NMC_3STAGE_FINAL - 3-stage NMC opamp, FULL current-mirror bias
+* SKY130A, 1.8 V supply, CL = 10 pF, IBIAS = 10 uA reference
 *
 * Topology (single-ended):
 *   Stage 1: NMOS-input folded cascode -> vo1
@@ -7,33 +7,51 @@
 *   Stage 3: PMOS common-source         -> VOUT
 *   Cm1 around stage 3, Cm2 around stages 2+3.
 *
-* Bias: NMOS diode (vbn) and PMOS-LVT diode (vbp) from IBIAS=10uA.
-* Cascode biases (vbn_cas, vbp_cas) kept as V-sources for now.
+* Bias (no V-sources, no resistor wires):
+*   M_NREF NMOS diode at IBIAS pin sets vbn (== IBIAS, same node).
+*   M_PREF (PMOS-LVT diode) sets vbp from a 10 uA NMOS sink mirror.
+*   Sooch wide-swing cascode generators set vbp_cas, vbn_cas via
+*   current-mirror branches at I_aux = 25 uA each:
+*     vbp_cas = VDD - (|Vt_p| + 2.Vov(M7p))   (PMOS cascode bias)
+*     vbn_cas =        Vt_n  + 2.Vov(M9n)     (NMOS cascode bias)
+*   Each aux device runs at half the main cascode current with W/L
+*   chosen to scale Vov by 2x -- cascoded transistor at the edge of
+*   saturation, max output swing.
+*
 * DC-coupled stages (no AC coupling caps).
 * Open-loop OP requires unity-gain DC feedback in TB.
 
 .subckt LELO_NMC_3STAGE_FINAL VSS VDD VOUT IBIAS VINP VINN VREF
 
-.param Vbn_cas = 0.95
-.param Vbp_cas = 0.75
-VBNC vbn_cas VSS dc 'Vbn_cas'
-VBPC vbp_cas VSS dc 'Vbp_cas'
-
 * =====================================================================
-* BIAS GENERATOR
+* BIAS GENERATOR -- pure current mirrors, no V-sources, no R-wires
 * =====================================================================
-* IBIAS sinks 10 uA from outside into IBIAS pin (which is the vbn diode drain).
+* IBIAS pin sinks 10 uA from outside.  M_NREF NMOS diode drain=gate=IBIAS,
+* so vbn === IBIAS (one node, no need for a separate 0-ohm "wire").
 XM_NREF IBIAS IBIAS VSS VSS sky130_fd_pr__nfet_01v8 L=1 W=4 nf=1 m=1
-RVBN vbn IBIAS 0
 
-* PMOS reference branch
-XM_PREF_SNK vbp vbn VSS VSS sky130_fd_pr__nfet_01v8 L=1 W=4 nf=1 m=1
-XM_PREF     vbp vbp VDD VDD sky130_fd_pr__pfet_01v8_lvt L=1 W=8 nf=1 m=1
+* PMOS reference branch: 10 uA NMOS sink mirrors IBIAS, sinks through
+* PMOS-LVT diode -> vbp.
+XM_PREF_SNK vbp IBIAS VSS VSS sky130_fd_pr__nfet_01v8     L=1 W=4 nf=1 m=1
+XM_PREF     vbp vbp   VDD VDD sky130_fd_pr__pfet_01v8_lvt L=1 W=8 nf=1 m=1
+
+* ---- Sooch wide-swing PMOS cascode bias (vbp_cas) ----------------
+* Main cascode = M7p/M8p (W=160 nf=16 L=2, I_main = 100 uA).
+* Aux PMOS-LVT diode at I_aux=25 uA, L=2 to keep (W/L)_aux/(W/L)_main = 1/4.
+* Sink current set by NMOS gate=vbn sized 2.5x M_NREF -> 25 uA.
+XM_PCAS_AUX vbp_cas vbp_cas VDD VDD sky130_fd_pr__pfet_01v8_lvt L=2 W=10 nf=1 m=1
+XM_PCAS_SNK vbp_cas IBIAS   VSS VSS sky130_fd_pr__nfet_01v8     L=1 W=10 nf=1 m=1
+
+* ---- Sooch wide-swing NMOS cascode bias (vbn_cas) ----------------
+* Main cascode = M9n/M10n (W=40 nf=8 L=2, I_main = 100 uA).
+* Aux NMOS diode at I_aux=25 uA, L=2 to keep (W/L)_aux/(W/L)_main = 1/4.
+XM_NCAS_SRC vbn_cas vbp     VDD VDD sky130_fd_pr__pfet_01v8_lvt L=1 W=20 nf=1 m=1
+XM_NCAS_AUX vbn_cas vbn_cas VSS VSS sky130_fd_pr__nfet_01v8     L=2 W=4  nf=1 m=1
 
 * =====================================================================
 * STAGE 1 : NMOS-input folded cascode
 * =====================================================================
-XMTAIL1 ntail1 vbn VSS VSS sky130_fd_pr__nfet_01v8 L=1 W=80 nf=16 m=1
+XMTAIL1 ntail1 IBIAS VSS VSS sky130_fd_pr__nfet_01v8 L=1 W=80 nf=16 m=1
 
 XM1   nfp  VINN ntail1 VSS sky130_fd_pr__nfet_01v8 L=1 W=40 nf=8 m=1
 XM2   nfn  VINP ntail1 VSS sky130_fd_pr__nfet_01v8 L=1 W=40 nf=8 m=1
@@ -41,14 +59,14 @@ XM2   nfn  VINP ntail1 VSS sky130_fd_pr__nfet_01v8 L=1 W=40 nf=8 m=1
 XM3p  nfp  vo1d VDD VDD sky130_fd_pr__pfet_01v8_lvt L=2 W=320 nf=32 m=1
 XM5p  nfn  vo1d VDD VDD sky130_fd_pr__pfet_01v8_lvt L=2 W=320 nf=32 m=1
 
-XM7p  vo1d vbp_cas nfp VDD sky130_fd_pr__pfet_01v8_lvt L=1 W=160 nf=16 m=1
-XM8p  vo1  vbp_cas nfn VDD sky130_fd_pr__pfet_01v8_lvt L=1 W=160 nf=16 m=1
+XM7p  vo1d vbp_cas nfp VDD sky130_fd_pr__pfet_01v8_lvt L=2 W=160 nf=16 m=1
+XM8p  vo1  vbp_cas nfn VDD sky130_fd_pr__pfet_01v8_lvt L=2 W=160 nf=16 m=1
 
-XM9n  vo1d vbn_cas nlowp VSS sky130_fd_pr__nfet_01v8 L=1 W=40 nf=8 m=1
-XM10n vo1  vbn_cas nlown VSS sky130_fd_pr__nfet_01v8 L=1 W=40 nf=8 m=1
+XM9n  vo1d vbn_cas nlowp VSS sky130_fd_pr__nfet_01v8 L=2 W=40 nf=8 m=1
+XM10n vo1  vbn_cas nlown VSS sky130_fd_pr__nfet_01v8 L=2 W=40 nf=8 m=1
 
-XM11n nlowp vbn VSS VSS sky130_fd_pr__nfet_01v8 L=2 W=80 nf=16 m=1
-XM12n nlown vbn VSS VSS sky130_fd_pr__nfet_01v8 L=2 W=80 nf=16 m=1
+XM11n nlowp IBIAS VSS VSS sky130_fd_pr__nfet_01v8 L=2 W=80 nf=16 m=1
+XM12n nlown IBIAS VSS VSS sky130_fd_pr__nfet_01v8 L=2 W=80 nf=16 m=1
 
 * =====================================================================
 * STAGE 2 : PMOS-input 5T-OTA
@@ -63,14 +81,17 @@ XM24n    vo2    vo2d  VSS    VSS sky130_fd_pr__nfet_01v8     L=2 W=20 nf=4 m=1
 * STAGE 3 : PMOS common-source, NMOS sink
 * =====================================================================
 XM31p VOUT vo2 VDD VDD sky130_fd_pr__pfet_01v8_lvt L=2 W=400 nf=40 m=1
-XM32n VOUT vbn VSS VSS sky130_fd_pr__nfet_01v8     L=2 W=240 nf=24 m=1
+XM32n VOUT IBIAS VSS VSS sky130_fd_pr__nfet_01v8     L=2 W=240 nf=24 m=1
 
 * =====================================================================
 * NESTED MILLER COMPENSATION
+* Spec PM > 50 (Table 7-1) -> trimmed from 75 deg headroom for GBW.
+* CCM2 (outer) sets fGBW ~ gm1/(2.pi.CCM2); CCM1 (inner) sets the
+* secondary-loop UGF for stage-2+stage-3.
 * =====================================================================
 CCM1 VOUT nm1 8p
-RZM1 nm1  vo2 2k
-CCM2 VOUT nm2 20p
-RZM2 nm2  vo1 1k
+RZM1 nm1  vo2 1.5k
+CCM2 VOUT nm2 18p
+RZM2 nm2  vo1 800
 
 .ends

@@ -1,0 +1,50 @@
+corner,gain_db,gbw_mhz,pm_deg,vout_v,status
+Sch_Gt_Ktt_Tt_Vt      ,1.051107e+02 dB,    8.77 MHz,5.468420e+01 deg,1.293028e+00 V,PASS
+Sch_Gt_Ktt_Tt_Vl      ,1.047760e+02 dB,    8.42 MHz,5.570170e+01 deg,8.498552e-01 V,PASS
+Sch_Gt_Ktt_Tt_Vh      ,1.053450e+02 dB,    8.93 MHz,5.447600e+01 deg,9.497664e-01 V,PASS
+Sch_Gt_Ktt_Tl_Vt      ,1.064856e+02 dB,   10.16 MHz,6.399580e+01 deg,8.999059e-01 V,PASS
+Sch_Gt_Ktt_Tl_Vl      ,1.060332e+02 dB,    9.60 MHz,6.502760e+01 deg,       V,PASS
+Sch_Gt_Ktt_Tl_Vh      ,1.068107e+02 dB,   10.40 MHz,6.386000e+01 deg,9.498603e-01 V,PASS
+Sch_Gt_Ktt_Th_Vt      ,9.259196e+01 dB,    7.30 MHz,4.754450e+01 deg,8.996742e-01 V,MARG
+Sch_Gt_Ktt_Th_Vl      ,9.224167e+01 dB,    7.06 MHz,4.857500e+01 deg,8.497174e-01 V,MARG
+Sch_Gt_Ktt_Th_Vh      ,9.275131e+01 dB,    7.41 MHz,4.723050e+01 deg,9.496290e-01 V,MARG
+Sch_Gt_Kff_Tt_Vt      ,1.023510e+02 dB,    9.25 MHz,4.719520e+01 deg,8.997278e-01 V,MARG
+Sch_Gt_Kff_Tt_Vl      ,1.021319e+02 dB,    9.03 MHz,4.785730e+01 deg,8.497724e-01 V,MARG
+Sch_Gt_Kff_Tt_Vh      ,1.025079e+02 dB,    9.38 MHz,4.702750e+01 deg,9.496819e-01 V,MARG
+Sch_Gt_Kff_Tl_Vt      ,6.275615e+01 dB,    6.48 MHz,7.156640e+01 deg,8.998205e-01 V,FAIL
+Sch_Gt_Kff_Tl_Vl      ,         dB,       - MHz,       deg,8.498651e-01 V,FAIL
+Sch_Gt_Kff_Tl_Vh      ,1.061985e+02 dB,   10.97 MHz,5.617090e+01 deg,1.881354e+00 V,PASS
+Sch_Gt_Kff_Th_Vt      ,8.199350e+01 dB,    6.98 MHz,4.395690e+01 deg,8.995946e-01 V,FAIL
+Sch_Gt_Kff_Th_Vl      ,8.174977e+01 dB,    6.85 MHz,4.457300e+01 deg,8.496391e-01 V,FAIL
+Sch_Gt_Kff_Th_Vh      ,8.211436e+01 dB,    7.06 MHz,4.381820e+01 deg,9.495488e-01 V,FAIL
+Sch_Gt_Kss_Tt_Vt      ,1.062331e+02 dB,    8.33 MHz,5.968100e+01 deg,1.066308e+00 V,PASS
+Sch_Gt_Kss_Tt_Vl      ,1.057176e+02 dB,    7.80 MHz,6.082910e+01 deg,       V,PASS
+Sch_Gt_Kss_Tt_Vh      ,1.065267e+02 dB,    8.56 MHz,5.909830e+01 deg,       V,PASS
+Sch_Gt_Kss_Tl_Vt      ,1.067062e+02 dB,    9.62 MHz,6.875390e+01 deg,8.999906e-01 V,PASS
+Sch_Gt_Kss_Tl_Vl      ,1.060764e+02 dB,    8.80 MHz,6.992330e+01 deg,8.500319e-01 V,PASS
+Sch_Gt_Kss_Tl_Vh      ,1.071184e+02 dB,    9.97 MHz,6.843680e+01 deg,9.499458e-01 V,PASS
+Sch_Gt_Kss_Th_Vt      ,9.982413e+01 dB,    7.08 MHz,5.193150e+01 deg,8.997554e-01 V,MARG
+Sch_Gt_Kss_Th_Vl      ,9.941236e+01 dB,    6.72 MHz,5.327060e+01 deg,8.497969e-01 V,MARG
+Sch_Gt_Kss_Th_Vh      ,1.000527e+02 dB,    7.25 MHz,5.133590e+01 deg,9.497112e-01 V,PASS
+Sch_Gt_Ksf_Tt_Vt      ,1.056461e+02 dB,    8.83 MHz,6.084660e+01 deg,7.626215e-01 V,PASS
+Sch_Gt_Ksf_Tt_Vl      ,         dB,       - MHz,       deg,       V,FAIL
+Sch_Gt_Ksf_Tt_Vh      ,1.059453e+02 dB,    8.94 MHz,6.100470e+01 deg,       V,PASS
+Sch_Gt_Ksf_Tl_Vt      ,1.057242e+02 dB,   10.25 MHz,7.052290e+01 deg,9.000353e-01 V,PASS
+Sch_Gt_Ksf_Tl_Vl      ,1.052531e+02 dB,    9.96 MHz,7.056250e+01 deg,8.500805e-01 V,PASS
+Sch_Gt_Ksf_Tl_Vh      ,1.060698e+02 dB,   10.42 MHz,7.077950e+01 deg,9.499890e-01 V,PASS
+Sch_Gt_Ksf_Th_Vt      ,1.018777e+02 dB,    7.54 MHz,5.272800e+01 deg,8.997979e-01 V,PASS
+Sch_Gt_Ksf_Th_Vl      ,1.016265e+02 dB,    7.41 MHz,5.297350e+01 deg,8.498430e-01 V,PASS
+Sch_Gt_Ksf_Th_Vh      ,1.020495e+02 dB,    7.62 MHz,5.277910e+01 deg,9.497523e-01 V,PASS
+Sch_Gt_Kfs_Tt_Vt      ,9.961738e+01 dB,    8.56 MHz,4.695770e+01 deg,8.996827e-01 V,MARG
+Sch_Gt_Kfs_Tt_Vl      ,9.905953e+01 dB,    7.90 MHz,4.968890e+01 deg,8.497227e-01 V,MARG
+Sch_Gt_Kfs_Tt_Vh      ,9.987909e+01 dB,    8.85 MHz,4.573650e+01 deg,9.496390e-01 V,MARG
+Sch_Gt_Kfs_Tl_Vt      ,1.061875e+02 dB,    9.96 MHz,5.526990e+01 deg,8.997739e-01 V,PASS
+Sch_Gt_Kfs_Tl_Vl      ,1.056468e+02 dB,    8.90 MHz,5.835050e+01 deg,8.498135e-01 V,PASS
+Sch_Gt_Kfs_Tl_Vh      ,1.064652e+02 dB,   10.46 MHz,5.437390e+01 deg,9.497301e-01 V,PASS
+Sch_Gt_Kfs_Th_Vt      ,7.587297e+01 dB,    5.85 MHz,4.796810e+01 deg,8.995539e-01 V,FAIL
+Sch_Gt_Kfs_Th_Vl      ,7.526288e+01 dB,    5.51 MHz,4.983640e+01 deg,8.495940e-01 V,FAIL
+Sch_Gt_Kfs_Th_Vh      ,2.973150e+01 dB,    3.11 MHz,4.192430e+01 deg,9.495105e-01 V,FAIL
+
+================ SUMMARY ================
+PASS = 36 / 45
+FAIL = 9 / 45

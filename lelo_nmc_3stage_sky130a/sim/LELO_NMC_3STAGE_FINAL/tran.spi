@@ -21,13 +21,15 @@ IIBIAS VSS    IBIAS  dc {ibias_val}
 CL     VOUT   VSS    10p
 .include ../xdut.spi
 
-.nodeset v(VOUT)        = {vcm}
-.nodeset v(VINN)        = {vcm}
-.nodeset v(VREF)        = 1.0
-.nodeset v(xdut.vbn)    = 0.72
-.nodeset v(xdut.vbp)    = 1.13
-.nodeset v(xdut.vo1)    = 1.13
-.nodeset v(xdut.vo2)    = 1.02
+.nodeset v(VOUT)         = {vcm}
+.nodeset v(VINN)         = {vcm}
+.nodeset v(VREF)         = 1.0
+.nodeset v(xdut.IBIAS)   = 0.70
+.nodeset v(xdut.vbp)     = 1.10
+.nodeset v(xdut.vbn_cas) = 0.90
+.nodeset v(xdut.vbp_cas) = 0.85
+.nodeset v(xdut.vo1)     = 0.95
+.nodeset v(xdut.vo2)     = 0.70
 .ic v(VREF) = 1.0
 
 .save v(VOUT) v(VINP) v(VINN) v(VREF) v(xdut.vo1) v(xdut.vo2)
