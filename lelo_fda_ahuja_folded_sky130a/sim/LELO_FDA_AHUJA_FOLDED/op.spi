@@ -15,6 +15,7 @@ IBIAS_REF VDD IBIAS dc 100u
 
 * Static nVcmfb driver disabled - internal transistor CMFB now drives nVcmfb
 RCMFB_PROBE nVcmfb 0 1G
+RCMFB1_PROBE nVcmfb1 0 1G
 
 .ic v(xdut.ntail)=0.20 v(xdut.apos)=0.95 v(xdut.aneg)=0.95
 .ic v(xdut.bpos)=1.30  v(xdut.bneg)=1.30
@@ -54,7 +55,7 @@ set filetype=ascii
 op
 
 echo "==== Node voltages ===="
-print v(xdut.ntail) v(xdut.aneg) v(xdut.apos) v(xdut.bneg) v(xdut.bpos) v(nVcmfb) v(vop) v(von) v(IBIAS) v(xdut.vbp) v(xdut.pcas)
+print v(xdut.ntail) v(xdut.aneg) v(xdut.apos) v(xdut.bneg) v(xdut.bpos) v(nVcmfb) v(nVcmfb1) v(vop) v(von) v(IBIAS) v(xdut.vbp) v(xdut.pcas)
 echo "==== Mi1 (NMOS input pair) ===="
 print @m.xdut.xm1.msky130_fd_pr__nfet_01v8[gm] @m.xdut.xm1.msky130_fd_pr__nfet_01v8[gds]
 print @m.xdut.xm1.msky130_fd_pr__nfet_01v8[id] @m.xdut.xm1.msky130_fd_pr__nfet_01v8[vgs]

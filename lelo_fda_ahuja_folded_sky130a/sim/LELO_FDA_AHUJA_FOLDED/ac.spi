@@ -17,6 +17,7 @@ IBIAS_REF VDD IBIAS dc 100u
 
 * Static CMFB driver disabled - internal transistor CMFB now closed
 RCMFB_PROBE nVcmfb 0 1G
+RCMFB1_PROBE nVcmfb1 0 1G
 
 CLP    VOP    VSS  10p
 CLN    VON    VSS  10p
