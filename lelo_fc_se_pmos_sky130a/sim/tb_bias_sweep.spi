@@ -1,0 +1,47 @@
+* Bias sweep: hold unity FB, sweep VBIAS3 (sink current) and VBIAS1 (PMOS cascode).
+* For each (VB1,VB3): solve OP, report VOUTP, IDD, fL.
+
+.param VDD_VAL = 1.2
+.param VCM     = 0.6
+.param IREF    = 10u
+.param CL_VAL  = 5p
+
+.include dut.spi
+XMPR    VBP  VBP  VDD VDD  sky130_fd_pr__pfet_01v8_lvt L=1 W=4 nf=2
+IREFS   VBP  0    dc {IREF}
+
+XDUT VDD VSS VBP VBIAS1 VBIAS2 VBIAS3 VINP VINN VOUTP fc_se_pmos
+
+VDD     VDD     0  dc {VDD_VAL}
+VSS     VSS     0  dc 0
+VVB1    VBIAS1  0  dc 0.5
+VVB2    VBIAS2  0  dc 0.95
+VVB3    VBIAS3  0  dc 0.65
+RFB     VOUTP   VINN  1
+VVINP   VINP    0     dc {VCM}
+CL      VOUTP   VSS   {CL_VAL}
+
+.option TNOM=27 GMIN=1e-12 reltol=1e-3 srcsteps=20 itl1=500 itl6=300 noopiter gminsteps=20
+.save all
+.control
+set num_threads=4
+unset askquit
+set filetype=ascii
+echo "VB3   VB1   VOUTP    fL      np3d   nbL    IDD_uA"
+foreach vb3 0.55 0.60 0.65 0.70
+  foreach vb1 0.40 0.50 0.60 0.70
+    alter vvb3 dc=$vb3
+    alter vvb1 dc=$vb1
+    tran 10n 50u uic
+    op
+    let idd_ua = -i(vdd)*1e6
+    let r_voutp = v(voutp)
+    let r_fl    = v(xdut.fl)
+    let r_np3d  = v(xdut.np3d)
+    let r_nbl   = v(xdut.nbl)
+    print $vb3 $vb1 r_voutp r_fl r_np3d r_nbl idd_ua
+  end
+end
+quit
+.endc
+.end

@@ -1,0 +1,135 @@
+\documentclass[border=10pt]{standalone}
+\usepackage[siunitx, RPvoltages]{circuitikz}
+\usetikzlibrary{positioning,calc}
+\ctikzset{transistors/arrow pos=end}
+\ctikzset{bipoles/length=1.0cm}
+\ctikzset{resistors/scale=0.9}
+
+\begin{document}
+\begin{circuitikz}[american, scale=1.0, font=\small,
+  every node/.style={font=\small},
+  bus/.style={blue!70!black, dashed, thick}]
+
+% ============================================================
+%  RAILS
+% ============================================================
+\draw (0,8) -- (16,8) node[midway,above]{};
+\node[left] at (0,8) {$V_{DD}=0.9\,\mathrm{V}$};
+\draw (0,0) -- (16,0);
+\node[left] at (0,0) {$V_{SS}$};
+
+% ============================================================
+%  TITLE
+% ============================================================
+\node at (8,9) {\large\bfseries R-degenerated wide-swing cascode bias --- sky130A LVT, $V_{DD}=0.9\,\mathrm{V}$};
+
+% ============================================================
+%  COL 1: MASTER  (IBIAS pin -> PMOS diode -> VBP)
+% ============================================================
+\node[above, font=\bfseries] at (2,8.6) {Col 1: master};
+
+% PMOS diode XMP_REF
+\draw (2,8) to[short] (2,7.2);
+\draw (2,7.2) node[pigfete, anchor=D, xscale=-1] (Mref) {};
+\node[right=2pt of Mref.G, font=\scriptsize] {$M_{REF}$ \tiny($16\times4\,\mathrm{nf}/1$, m=4)};
+% diode short
+\draw (Mref.G) -| (Mref.D);
+% drain (VBP) goes down through RBP=1Ω (treat as wire) to IBIAS pin
+\draw (Mref.D) -- (2,5.0);
+\node[circle,fill,inner sep=1.2pt] at (2,5.0) {};
+\node[right] at (2,5.0) {$V_{BP}$};
+% IBIAS pin
+\draw (2,5.0) -- (2,3.5);
+\node[circle,fill,inner sep=1.2pt] at (2,3.5) {};
+\draw (2,3.5) -- (0.3,3.5);
+\node[left] at (0.3,3.5) {\textbf{IBIAS pin}};
+\node[below=4pt, align=center, font=\scriptsize] at (1.0,3.2) {external sink\\$I_{REF}=10\,\mu\mathrm{A}$};
+
+% horizontal VBP bus
+\draw[thick] (2,5.0) -- (14,5.0);
+
+% ============================================================
+%  COL 2: NMOS BIAS LEG
+%   VDD -> PMOS source (g=VBP) -> VBIAS2 -> R_n -> VBIAS3 -> NMOS diode -> VSS
+% ============================================================
+\node[above, font=\bfseries] at (6.5,8.6) {Col 2: NMOS leg};
+
+% PMOS source XMP_NLEG
+\draw (6.5,8) -- (6.5,7.2);
+\draw (6.5,7.2) node[pigfete, anchor=S] (Mnleg) {};
+% S at top, D at bottom
+\node[right=2pt of Mnleg.D, font=\scriptsize] {$M_{P,NLEG}$};
+% gate to VBP bus
+\draw (Mnleg.G) -- (2,5.0);  % gate runs left to VBP node? No, draw to bus
+% Drain -> VBIAS2 node
+\draw (Mnleg.D) -- (6.5,5.8);
+\node[circle,fill,inner sep=1.2pt] at (6.5,5.8) {};
+\node[right] at (6.5,5.8) {$V_{BIAS2}$};
+% VBIAS2 -> R_n -> VBIAS3
+\draw (6.5,5.8) to[R, l=$R_n$, name=Rn] (6.5,3.8);
+\node[circle,fill,inner sep=1.2pt] at (6.5,3.8) {};
+\node[right] at (6.5,3.8) {$V_{BIAS3}$};
+% NMOS diode XMN_NDIO
+\draw (6.5,3.8) -- (6.5,2.2);
+\draw (6.5,2.2) node[nigfete, anchor=D] (Mndio) {};
+\draw (Mndio.G) -| (Mndio.D);  % diode tie
+\node[right=2pt of Mndio.G, font=\scriptsize] {$M_{N,DIO}$ \tiny($4\times2\,\mathrm{nf}/0.5$, m=4)};
+\draw (Mndio.S) -- (6.5,0);
+
+% ============================================================
+%  COL 3: PMOS BIAS LEG
+%   VBP -> R_p -> VBIAS1 -> NMOS sink (g=VBIAS3) -> VSS
+% ============================================================
+\node[above, font=\bfseries] at (10.5,8.6) {Col 3: PMOS leg};
+
+% VBP tap point at top of R_p
+\node[circle,fill,inner sep=1.2pt] at (10.5,5.0) {};
+% R_p from VBP down to VBIAS1
+\draw (10.5,5.0) to[R, l_=$R_p$, name=Rp] (10.5,3.0);
+\node[circle,fill,inner sep=1.2pt] at (10.5,3.0) {};
+\node[right] at (10.5,3.0) {$V_{BIAS1}$};
+% NMOS sink XMN_PSNK
+\draw (10.5,3.0) -- (10.5,1.6);
+\draw (10.5,1.6) node[nigfete, anchor=D] (Mpsnk) {};
+\node[right=2pt of Mpsnk.D, font=\scriptsize] {$M_{N,PSNK}$ \tiny($4\times2\,\mathrm{nf}/0.5$, m=4)};
+% gate of Mpsnk to VBIAS3 bus (horizontal across)
+\draw (Mpsnk.G) -- (8.5,1.0) -- (8.5,3.8) -- (6.5,3.8);
+\draw (Mpsnk.S) -- (10.5,0);
+
+% VBIAS3 bus to right (for signal-path)
+\draw[bus] (6.5,3.8) -- (8.5,3.8);
+\draw[bus] (10.5,3.0) -- (13,3.0) -- (13,2.5);
+\draw[bus] (6.5,5.8) -- (13,5.8) -- (13,6.0);
+
+% ============================================================
+%  Output bus arrows to signal-path block
+% ============================================================
+\draw[bus, ->] (2,5.0) -- (13.5,5.0) -- (14,5.0);
+\node[bus, above, font=\scriptsize] at (13.5,5.05) {$V_{BP}$};
+
+\draw[bus, ->] (6.5,5.8) -- (14,5.8);
+\node[bus, above, font=\scriptsize] at (13.5,5.85) {$V_{BIAS2}$};
+
+\draw[bus, ->] (10.5,3.0) -- (14,3.0);
+\node[bus, above, font=\scriptsize] at (13.5,3.05) {$V_{BIAS1}$};
+
+\draw[bus, ->] (6.5,3.8) -- (8.0,3.8) -- (8.0,2.4) -- (14,2.4);
+\node[bus, above, font=\scriptsize] at (13.5,2.45) {$V_{BIAS3}$};
+
+% ============================================================
+%  SIGNAL-PATH BLOCK (placeholder annotation, unchanged)
+% ============================================================
+\node[draw, rounded corners, thick, fill=gray!8,
+      minimum width=3.6cm, minimum height=4.6cm,
+      anchor=west, align=left, font=\footnotesize] at (14.2,4.0)
+  {\textbf{Folded-cascode}\\\textbf{signal path}\\\textbf{(UNCHANGED)}\\[2pt]
+   $M_{TL}$ tail $\leftarrow V_{BP}$\\
+   $M_1/M_2$ input pair\\
+   $M_{1A}/M_{2A}$ NMOS casc.\\$\quad \leftarrow V_{BIAS2}$\\
+   $M_{3A}/M_{4A}$ PMOS casc.\\$\quad \leftarrow V_{BIAS1}$\\
+   $M_{11}/M_{12}$ NMOS bot.\\$\quad \leftarrow V_{BIAS3}$\\
+   $M_3$ diode $@$ $f_L$\\
+   $M_4\!\to V_{OUTP}$};
+
+\end{circuitikz}
+\end{document}

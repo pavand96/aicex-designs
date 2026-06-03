@@ -1,0 +1,279 @@
+\documentclass[border=15pt]{standalone}
+\usepackage[siunitx, RPvoltages]{circuitikz}
+\usetikzlibrary{positioning,calc,arrows.meta}
+
+% ============== global style ==============
+\ctikzset{
+  transistors/arrow pos=end,
+  bipoles/length=1.2cm,
+  resistors/scale=1.0,
+  transistors/scale=1.1,
+  tripoles/mos style/arrows,
+}
+\tikzset{
+  pin/.style={circle, fill=black, inner sep=1.5pt, outer sep=0},
+  busline/.style={blue!50!black, dashed, line width=0.5mm},
+  siglin/.style={red!70!black, dashed, line width=0.5mm},
+  nlbl/.style={font=\small},
+  dlbl/.style={font=\footnotesize, blue!50!black},
+  tlbl/.style={font=\scriptsize\itshape},
+}
+
+% ============== column centres (x) ==============
+\def\xA{ 2.5}     %% PMOS bias generator
+\def\xB{ 8.0}     %% NMOS bias generator
+\def\xC{13.5}     %% Tail + input pair
+\def\xD{19.5}     %% SE output cascode
+
+% Y-levels (consistent across columns)
+\def\yVDD{14.0}                    %% VDD rail
+\def\yTopGate{12.7}                %% VP1 bus + top transistor gates
+\def\yP1{12.2}    \def\yP1d{10.7}  %% MP1 src / drain
+\def\yP2{10.7}    \def\yP2d{ 9.2}  %% MP2 src / drain  (also VP2-tap level)
+\def\yMid{ 7.5}                    %% Rp/Rn midpoint
+\def\yN2{ 6.0}    \def\yN2s{ 4.5}  %% MN2 drain/src  (VN2 tap)
+\def\yN1{ 4.5}    \def\yN1s{ 3.0}  %% MN1 drain/src  (VN1 tap)
+\def\yGND{ 2.0}
+
+\begin{document}
+\begin{circuitikz}[american, font=\small]
+
+% ===================================================================
+% TITLE
+% ===================================================================
+\node[font=\Large\bfseries] at (\xC, 15.2)
+   {Folded-cascode SE OTA --- wide-swing R-offset bias};
+\node[font=\normalsize] at (\xC, 14.6)
+   {sky130A LVT \;\; $V_{DD}=0.9\,\mathrm{V}$ \;\; $I_{REF}=10\,\mu\mathrm{A}$};
+
+% ===================================================================
+% VDD RAILS  (per column, short stubs to keep diagram clean)
+% ===================================================================
+\foreach \x in {\xA,\xB,\xC,\xD}{
+  \draw[thick] (\x-1.4,\yVDD) -- (\x+1.4,\yVDD);
+  \node[font=\normalsize] at (\x-1.6, \yVDD) {$V_{DD}$};
+}
+
+% ===================================================================
+% COLUMN A : PMOS bias generator
+%   VDD - MP1 (diode VP1) - MP2 (diode VP2) - Rp - 10uA - GND
+% ===================================================================
+
+% --- MP1 (PMOS, source up to VDD, diode-tied) ---
+\node[pmos, xscale=-1, anchor=source] (MP1) at (\xA,\yP1) {};
+\draw[thick] (MP1.source) -- (\xA,\yVDD);
+% gate stub on LEFT (xscale flips, so gate ends up on right of -1 = left)
+\draw (MP1.gate) -- ++(-0.6,0) coordinate (gP1);
+\node[pin] at (gP1) {};
+\node[nlbl, left] at (gP1) {$V_{P1}$};
+% diode-tie: gate <-> drain via outside loop on LEFT
+\draw (gP1) -- ($(gP1)+(0,-0.7)$)
+       -- ($(MP1.drain)+(-0.6,-0.7)$)
+       -- ($(MP1.drain)+(-0.6,0)$)
+       -- (MP1.drain);
+\node[tlbl, right=12pt of MP1.source, yshift=-4pt] {$M_{P1}$};
+
+% --- MP2 (PMOS, source at MP1 drain, diode-tied to VP2) ---
+\node[pmos, xscale=-1, anchor=source] (MP2) at (\xA,\yP2) {};
+\draw (MP1.drain) -- (MP2.source);
+\draw (MP2.gate) -- ++(-0.6,0) coordinate (gP2);
+\node[pin] at (gP2) {};
+\node[nlbl, left] at (gP2) {$V_{P2}$};
+\draw (gP2) -- ($(gP2)+(0,-0.7)$)
+       -- ($(MP2.drain)+(-0.6,-0.7)$)
+       -- ($(MP2.drain)+(-0.6,0)$)
+       -- (MP2.drain);
+\node[tlbl, right=12pt of MP2.source, yshift=-4pt] {$M_{P2}$};
+
+% --- Rp + 10 uA sink ---
+\draw (MP2.drain) -- (\xA,\yMid+0.4);
+\draw (\xA,\yMid+0.4) to[R, l_=$R_p$] (\xA,\yMid-1.6);
+\draw (\xA,\yMid-1.6) -- (\xA,\yMid-2.1);
+\draw (\xA,\yMid-2.1) to[I, invert] (\xA,\yGND+0.6);
+\node[tlbl, right=4pt] at (\xA,\yMid-2.6) {$10\,\mu$A};
+\draw (\xA,\yGND+0.6) -- (\xA,\yGND) node[ground]{};
+
+% column caption
+\node[font=\bfseries] at (\xA, 1.0) {PMOS bias gen};
+
+% ===================================================================
+% COLUMN B : NMOS bias generator
+%   VDD - MPN (g=VP1) - Rn - MN2 (diode VN2) - MN1 (diode VN1) - GND
+% ===================================================================
+
+% --- MPN (PMOS mirror, gate from VP1 bus) ---
+\node[pmos, xscale=-1, anchor=source] (MPN) at (\xB,\yP1) {};
+\draw[thick] (MPN.source) -- (\xB,\yVDD);
+\draw (MPN.gate) -- ++(-0.6,0) coordinate (gPN);
+\node[pin] at (gPN) {};
+\node[tlbl, right=12pt of MPN.source, yshift=-4pt] {$M_{PN}$};
+
+% --- Rn between MPN.drain and MN2.drain ---
+\draw (MPN.drain) -- (\xB,\yP2-0.2);
+\draw (\xB,\yP2-0.2) to[R, l_=$R_n$] (\xB,\yMid-0.5);
+
+% --- MN2 (NMOS, drain up, diode-tied VN2) ---
+\node[nmos, anchor=drain] (MN2) at (\xB,\yMid-0.5) {};
+\draw (MN2.gate) -- ++(0.6,0) coordinate (gN2);
+\node[pin] at (gN2) {};
+\node[nlbl, right] at (gN2) {$V_{N2}$};
+\draw (gN2) -- ($(gN2)+(0,0.7)$)
+       -- ($(MN2.drain)+(0.6,0.7)$)
+       -- ($(MN2.drain)+(0.6,0)$)
+       -- (MN2.drain);
+\node[tlbl, left=14pt of MN2.drain, yshift=-4pt] {$M_{N2}$};
+
+% --- MN1 (NMOS, source down to GND, diode-tied VN1) ---
+\node[nmos, anchor=drain] (MN1) at (\xB,\yMid-2.5) {};
+\draw (MN2.source) -- (MN1.drain);
+\draw (MN1.gate) -- ++(0.6,0) coordinate (gN1);
+\node[pin] at (gN1) {};
+\node[nlbl, right] at (gN1) {$V_{N1}$};
+\draw (gN1) -- ($(gN1)+(0,0.7)$)
+       -- ($(MN1.drain)+(0.6,0.7)$)
+       -- ($(MN1.drain)+(0.6,0)$)
+       -- (MN1.drain);
+\node[tlbl, left=14pt of MN1.drain, yshift=-4pt] {$M_{N1}$};
+
+\draw (MN1.source) -- (\xB,\yGND) node[ground]{};
+
+\node[font=\bfseries] at (\xB, 1.0) {NMOS bias gen};
+
+% ===================================================================
+% COLUMN C : Tail + PMOS input pair
+%   VDD - MTL(g=VP1) - Vtail - MIP/MIN - Vmidn/Vmidp
+% ===================================================================
+
+% --- MTL tail PMOS ---
+\node[pmos, xscale=-1, anchor=source] (MTL) at (\xC,\yP1) {};
+\draw[thick] (MTL.source) -- (\xC,\yVDD);
+\draw (MTL.gate) -- ++(-0.6,0) coordinate (gTL);
+\node[pin] at (gTL) {};
+\node[tlbl, right=12pt of MTL.source, yshift=-4pt] {$M_{TL}$};
+
+% Vtail node
+\draw (MTL.drain) -- (\xC,\yP2-0.3);
+\node[pin] at (\xC,\yP2-0.3) {};
+\node[nlbl, above right=-2pt and 2pt] at (\xC,\yP2-0.3) {$V_{tail}$};
+
+% Horizontal rail to two input-pair sources
+\draw (\xC-2.2,\yP2-0.3) -- (\xC+2.2,\yP2-0.3);
+
+% --- MIP (left of pair) ---  PMOS, source up
+\node[pmos, xscale=-1, anchor=source] (MIP) at (\xC-2.2,\yP2-0.3) {};
+\draw (MIP.gate) -- ++(-0.7,0) coordinate (gIP);
+\node[pin] at (gIP) {};
+\node[nlbl, left] at (gIP) {$V_{inp}$};
+\node[tlbl, right=12pt of MIP.source, yshift=-4pt] {$M_{INP}$};
+
+% --- MIN (right of pair) --- PMOS, source up
+\node[pmos, anchor=source] (MIN) at (\xC+2.2,\yP2-0.3) {};
+\draw (MIN.gate) -- ++(0.7,0) coordinate (gIN);
+\node[pin] at (gIN) {};
+\node[nlbl, right] at (gIN) {$V_{inn}$};
+\node[tlbl, left=12pt of MIN.source, yshift=-4pt] {$M_{INN}$};
+
+% Drains drop down: Vmidn (left) and Vmidp (right)
+\draw (MIP.drain) -- (\xC-2.2,\yMid-0.7);
+\node[pin] at (\xC-2.2,\yMid-0.7) {};
+\node[nlbl, below] at (\xC-2.2,\yMid-0.9) {$V_{midn}$};
+
+\draw (MIN.drain) -- (\xC+2.2,\yMid-0.7);
+\node[pin] at (\xC+2.2,\yMid-0.7) {};
+\node[nlbl, below] at (\xC+2.2,\yMid-0.9) {$V_{midp}$};
+
+\node[font=\bfseries] at (\xC, 1.0) {Tail + input pair};
+
+% ===================================================================
+% COLUMN D : SE output cascode (one leg shown)
+%   VDD - MP0(g=VP1) - MP2o(g=VP2) - VOUTP - MN2o(g=VN2) - MN1o(g=Vmidn) - GND
+% ===================================================================
+
+% --- MP0 top current source ---
+\node[pmos, xscale=-1, anchor=source] (MP0) at (\xD,\yP1) {};
+\draw[thick] (MP0.source) -- (\xD,\yVDD);
+\draw (MP0.gate) -- ++(-0.6,0) coordinate (gP0);
+\node[pin] at (gP0) {};
+\node[tlbl, right=12pt of MP0.source, yshift=-4pt] {$M_{P0}$};
+
+% --- MP2o cascode PMOS ---
+\node[pmos, xscale=-1, anchor=source] (MP2o) at (\xD,\yP2) {};
+\draw (MP0.drain) -- (MP2o.source);
+\draw (MP2o.gate) -- ++(-0.6,0) coordinate (gP2o);
+\node[pin] at (gP2o) {};
+\node[tlbl, right=12pt of MP2o.source, yshift=-4pt] {$M_{P2,o}$};
+
+% VOUTP node
+\draw (MP2o.drain) -- (\xD,\yP2d-0.5);
+\node[pin] at (\xD,\yP2d-0.5) {};
+\node[nlbl, right=6pt, font=\bfseries] at (\xD,\yP2d-0.5) {$V_{OUTP}$};
+
+% --- MN2o NMOS cascode ---
+\node[nmos, anchor=drain] (MN2o) at (\xD,\yP2d-0.5) {};
+\draw (MN2o.gate) -- ++(0.6,0) coordinate (gN2o);
+\node[pin] at (gN2o) {};
+\node[tlbl, left=14pt of MN2o.drain, yshift=-4pt] {$M_{N2,o}$};
+
+% --- MN1o NMOS bottom (gate driven by Vmidn -- signal) ---
+\node[nmos, anchor=drain] (MN1o) at (\xD,\yN2s-1.7) {};
+\draw (MN2o.source) -- (MN1o.drain);
+\draw (MN1o.gate) -- ++(0.6,0) coordinate (gN1o);
+\node[pin] at (gN1o) {};
+\node[tlbl, left=14pt of MN1o.drain, yshift=-4pt] {$M_{N1,o}$};
+
+\draw (MN1o.source) -- (\xD,\yGND) node[ground]{};
+
+\node[font=\bfseries] at (\xD, 1.0) {SE output cascode};
+
+% ===================================================================
+%  BIAS BUSES  (dashed blue, run at clean y-tracks)
+% ===================================================================
+
+% VP1 bus runs at y=\yTopGate, from col A to col D, taps to each gate
+\draw[busline] (gP1) -- (gP1 |- \xA,\yTopGate)
+   -- (gP0 |- \xD,\yTopGate);
+\foreach \g in {gPN,gTL,gP0}{
+  \draw[busline] (\g |- \xA,\yTopGate) -- (\g);
+}
+\node[dlbl, above] at ({(\xA+\xB)/2}, \yTopGate+0.05) {$V_{P1}$};
+\node[dlbl, above] at ({(\xB+\xC)/2}, \yTopGate+0.05) {$V_{P1}$};
+\node[dlbl, above] at ({(\xC+\xD)/2}, \yTopGate+0.05) {$V_{P1}$};
+
+% VP2 bus runs at y=\yP2d-0.9 from col A (gP2 left of MP2) to col D (gP2o)
+% jog: from gP2 go LEFT and DOWN to a clean track at y=\yP2d-0.9, traverse, then up to gP2o
+\draw[busline] (gP2) -- ($(gP2)+(-0.5,0)$) coordinate (vp2A)
+              -- (vp2A |- \xA,\yP2d-1.0) coordinate (vp2A2)
+              -- (vp2A2 -| \xD-1.6, 0)   coordinate (vp2D1)
+              -- (vp2D1 |- gP2o)         coordinate (vp2D2)
+              -- (gP2o);
+\node[dlbl, above] at (\xC, \yP2d-0.95) {$V_{P2}$ bus};
+
+% VN2 bus from col B gate (gN2) to col D MN2o gate (gN2o)
+% jog through y = \yN2s-0.2
+\draw[busline] (gN2) -- ($(gN2)+(0.6,0)$) coordinate (vn2B)
+              -- (vn2B |- \xB,\yN2s-0.4) coordinate (vn2B2)
+              -- (vn2B2 -| \xD+1.6,0)    coordinate (vn2D1)
+              -- (vn2D1 |- gN2o)         coordinate (vn2D2)
+              -- (gN2o);
+\node[dlbl, above] at (\xC, \yN2s-0.35) {$V_{N2}$ bus};
+
+% Vmidn SIGNAL from col C left drain to col D MN1o gate
+\draw[siglin] (\xC-2.2,\yMid-0.7) -- (\xC-2.2,\yMid-1.4)
+              -- (\xD+2.2,\yMid-1.4) -- (\xD+2.2,gN1o |- 0,0)
+              -- (gN1o);
+\node[dlbl, red!70!black, above] at ({(\xC+\xD)/2}, \yMid-1.35) {$V_{midn}$ \;(signal)};
+
+% ===================================================================
+% Foot-note
+% ===================================================================
+\node[draw, fill=yellow!10, rounded corners, align=left, font=\footnotesize,
+      inner sep=6pt] at (\xC, -0.8)
+   {\textbf{Topology summary} \quad (matches user's hand-drawn diagram)\\[2pt]
+    \textbullet\ Column A generates $V_{P1}, V_{P2}$ via two PMOS diodes + $R_p$ + ext.\ 10\,$\mu$A sink.\\
+    \textbullet\ Column B generates $V_{N1}, V_{N2}$ via $R_n$ + two NMOS diodes, mirrored from $V_{P1}$.\\
+    \textbullet\ Column C: PMOS tail (g=$V_{P1}$) + PMOS input pair, drains $\to V_{midn}, V_{midp}$.\\
+    \textbullet\ Column D: SE folded-cascode output; $M_{P0}|M_{P2,o}$ supply, $M_{N2,o}|M_{N1,o}$ sink,\\
+    \quad bottom NMOS gate driven by $V_{midn}$ from the input pair (the folding signal).};
+
+\end{circuitikz}
+\end{document}

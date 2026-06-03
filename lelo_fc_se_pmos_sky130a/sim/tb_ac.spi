@@ -1,0 +1,52 @@
+* AC testbench: open-loop via huge LFB/CFB, CL=5p, on-chip bias.
+
+.param VDD_VAL = 0.9
+.param VCM     = 0.3
+.param IREF    = 10u
+.param CL_VAL  = 5p
+
+.include dut.spi
+
+XDUT VDD VSS IBIAS VINP VINN VOUTP fc_se_pmos
+
+VDD     VDD     0       dc {VDD_VAL}
+VSS     VSS     0       dc 0
+IBIAS_S IBIAS   VDD     dc {IREF}
+VVCMREF VCMREF  0       dc {VCM}
+VVINP   VINP    VCMREF  dc 0 ac 1
+LFB     VINN    VOUTP   1G
+CFB     VINN    VCMREF  1G
+CL      VOUTP   VSS     {CL_VAL}
+
+.option TNOM=27 GMIN=1e-12 reltol=1e-3 srcsteps=20 itl1=500 itl6=300 noopiter gminsteps=20
+.save all
+
+.control
+set num_threads=4
+unset askquit
+set filetype=ascii
+tran 10n 200u uic
+op
+echo ""
+echo "================ OP CHECK ================"
+print v(IBIAS) v(xdut.vbp) v(xdut.vbias1) v(xdut.vbias2)
+print v(xdut.ntail) v(xdut.nbL) v(xdut.nbR) v(xdut.fL) v(xdut.np3d) v(xdut.np4d) v(VOUTP)
+print -i(vdd)
+
+ac dec 100 10 1G
+let av     = v(VOUTP)
+let mag_db = 20*log10(abs(av))
+let ph_deg = 180/PI * cph(av)
+meas ac dc_gain_db FIND mag_db AT=100
+meas ac fgbw       WHEN mag_db = 0 CROSS=1
+meas ac phase_ugf  FIND ph_deg WHEN mag_db = 0 CROSS=1
+let pm = 180 + phase_ugf
+echo ""
+echo "================ AC SUMMARY ================"
+print dc_gain_db
+print fgbw
+print phase_ugf
+print pm
+quit
+.endc
+.end

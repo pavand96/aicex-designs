@@ -1,0 +1,155 @@
+\documentclass[border=10pt]{standalone}
+\usepackage[siunitx, RPvoltages]{circuitikz}
+\usetikzlibrary{positioning,calc}
+\ctikzset{transistors/arrow pos=end}
+\ctikzset{bipoles/length=1.0cm}
+\ctikzset{resistors/scale=0.85}
+
+\begin{document}
+\begin{circuitikz}[american, scale=1.0, font=\small,
+  bus/.style={blue!60!black, dashed, thick}]
+
+% ============================================================
+%  RAILS
+% ============================================================
+\draw[thick] (-1,9) -- (17,9);
+\node[left] at (-1,9) {$V_{DD}=0.9\,\mathrm{V}$};
+\draw[thick] (-1,0) -- (17,0);
+\node[left] at (-1,0) {$V_{SS}$};
+
+% ============================================================
+%  TITLE (clear of all geometry)
+% ============================================================
+\node at (8,10.0) {\large\bfseries R-degenerated wide-swing cascode bias};
+\node at (8,9.55) {\small sky130A LVT \; --- \; $V_{DD}=0.9\,\mathrm{V}$,\; $I_{REF}=10\,\mu\mathrm{A}$};
+
+% ============================================================
+%  HORIZONTAL BUS TRACKS (right side)
+%   choose 4 distinct y-levels so labels never collide
+%   VBP at y=6.0, VBIAS2 at y=7.0, VBIAS1 at y=2.6, VBIAS3 at y=1.6
+% ============================================================
+
+% ============================================================
+%  COL 1: master IBIAS column   x = 1.5
+% ============================================================
+\node[font=\bfseries] at (1.5,8.6) {Col 1: master};
+
+% PMOS diode from VDD (source up)
+\draw (1.5,9) -- (1.5,8.0);
+\node[pmos, anchor=source, xscale=-1] (Mr) at (1.5,8.0) {};
+\node[font=\scriptsize] at (0.5,7.6) {$M_{REF}$};
+\node[font=\scriptsize] at (0.5,7.3) {\tiny 16/1, nf=4, m=4};
+% diode tie: gate to drain
+\draw (Mr.gate) -| ($(Mr.drain)+(0.4,0)$) -- (Mr.drain);
+% drain node = VBP, run down to IBIAS pin
+\draw (Mr.drain) -- (1.5,4.0);
+\node[circle,fill,inner sep=1.2pt] at (1.5,6.0) {};
+\node[left, font=\small] at (1.5,6.0) {$V_{BP}$};
+\node[circle,fill,inner sep=1.2pt] at (1.5,4.0) {};
+\draw (1.5,4.0) -- (-0.5,4.0);
+\node[left, font=\bfseries] at (-0.5,4.0) {IBIAS pin};
+\node[below, font=\scriptsize, align=center] at (0.5,3.7) {external\\sink\\$10\,\mu$A};
+
+% ============================================================
+%  Top VBP bus runs at y=6.0 from x=1.5 to x=14
+% ============================================================
+\draw[thick] (1.5,6.0) -- (14,6.0);
+
+% ============================================================
+%  COL 2: NMOS-bias leg  x = 6.0
+%    VDD -> PMOS source (g=VBP) -> VBIAS2 (top of R_n)
+%        -> R_n -> VBIAS3 (top of NMOS diode) -> NMOS diode -> VSS
+% ============================================================
+\node[font=\bfseries] at (6.0,8.6) {Col 2: NMOS leg};
+
+\draw (6.0,9) -- (6.0,8.0);
+\node[pmos, anchor=source, xscale=-1] (Mn) at (6.0,8.0) {};
+\node[font=\scriptsize] at (5.0,7.6) {$M_{P,NLEG}$};
+% gate connects horizontally to VBP bus at y=6.0
+\draw (Mn.gate) -| (4.6,6.0);
+\node[circle,fill,inner sep=1.2pt] at (4.6,6.0) {};
+% drain down to VBIAS2 node
+\draw (Mn.drain) -- (6.0,7.0);
+\node[circle,fill,inner sep=1.2pt] at (6.0,7.0) {};
+\node[right=2pt, font=\small] at (6.15,7.25) {$V_{BIAS2}$};
+% R_n from VBIAS2 down to VBIAS3
+\draw (6.0,7.0) to[R, l=$R_n$, name=Rn] (6.0,4.2);
+\node[right=2pt of Rn, font=\scriptsize] {10\,k$\Omega$};
+% VBIAS3 node
+\node[circle,fill,inner sep=1.2pt] at (6.0,4.2) {};
+\node[right=2pt, font=\small] at (6.15,4.45) {$V_{BIAS3}$};
+% NMOS diode XMN_NDIO (drain up)
+\draw (6.0,4.2) -- (6.0,2.6);
+\node[nmos, anchor=drain] (Mnd) at (6.0,2.6) {};
+% diode tie
+\draw (Mnd.gate) -| ($(Mnd.drain)+(-0.4,0)$);
+\node[right=4pt of Mnd.drain, font=\scriptsize, yshift=2pt] {$M_{N,DIO}$};
+\node[right=4pt of Mnd.drain, font=\scriptsize, yshift=-8pt] {\tiny W=4, nf=2, L=0.5, m=4};
+\draw (Mnd.source) -- (6.0,0);
+
+% ============================================================
+%  COL 3: PMOS-bias leg  x = 10.5
+%    VBP -> R_p -> VBIAS1 -> NMOS sink (g=VBIAS3) -> VSS
+% ============================================================
+\node[font=\bfseries] at (10.5,8.6) {Col 3: PMOS leg};
+
+% Tap VBP bus
+\node[circle,fill,inner sep=1.2pt] at (10.5,6.0) {};
+% R_p from VBP (y=6.0) down to VBIAS1 (y=4.0)
+\draw (10.5,6.0) to[R, l=$R_p$, name=Rp] (10.5,3.6);
+\node[right=2pt of Rp, font=\scriptsize] {10\,k$\Omega$};
+% VBIAS1 node
+\node[circle,fill,inner sep=1.2pt] at (10.5,3.6) {};
+\node[left, font=\small] at (10.5,3.6) {$V_{BIAS1}$};
+% NMOS sink XMN_PSNK
+\draw (10.5,3.6) -- (10.5,2.6);
+\node[nmos, anchor=drain] (Mps) at (10.5,2.6) {};
+\node[right=4pt of Mps.drain, font=\scriptsize, yshift=2pt] {$M_{N,PSNK}$};
+\node[right=4pt of Mps.drain, font=\scriptsize, yshift=-8pt] {\tiny W=4, nf=2, L=0.5, m=4};
+% gate of Mps drops onto the VBIAS3 bus track at y=0.8
+\draw (Mps.gate) -| (9.5,0.8);
+\node[circle,fill,inner sep=1.2pt] at (9.5,0.8) {};
+\draw (Mps.source) -- (10.5,0);
+
+% mark gate-routing node clean
+% (already done above)
+
+% ============================================================
+%  EXPORTED BUSES going to the right (signal path)
+% ============================================================
+% VBP bus already at y=6.0, extend to signal-path box
+\draw[bus, ->] (14,6.0) -- (14.8,6.0);
+\node[bus, above, font=\scriptsize] at (14.4,6.05) {$V_{BP}$};
+
+% VBIAS2 bus -- right from VBIAS2 node at y=7.0, clear of transistor labels
+\draw[bus] (6.0,7.0) -- (14,7.0);
+\draw[bus, ->] (14,7.0) -- (14.8,7.0);
+\node[bus, above, font=\scriptsize] at (14.4,7.05) {$V_{BIAS2}$};
+
+% VBIAS1 bus at y=3.6 going right
+\draw[bus, ->] (10.5,3.6) -- (14.8,3.6);
+\node[bus, above, font=\scriptsize] at (14.4,3.65) {$V_{BIAS1}$};
+
+% VBIAS3 bus -- exit LEFT of col-2 at y=4.2, drop below all transistors at
+% y=0.8 (between transistor sources and VSS rail), traverse right, then up
+\draw[bus] (6.0,4.2) -- (4.4,4.2) -- (4.4,0.8) -- (14,0.8);
+\draw[bus, ->] (14,0.8) -- (14.8,0.8);
+\node[bus, above, font=\scriptsize] at (14.4,0.85) {$V_{BIAS3}$};
+
+% ============================================================
+%  SIGNAL-PATH SUMMARY BLOCK
+% ============================================================
+\node[draw, rounded corners, thick, fill=gray!8,
+      minimum width=2.3cm, minimum height=5.0cm,
+      anchor=west, align=left, font=\scriptsize] (sig) at (15.0,4.5)
+  {\textbf{Folded-cascode}\\\textbf{signal path}\\\textbf{(UNCHANGED)}\\[3pt]
+   $M_{TL}$ tail\\$\;\;\leftarrow V_{BP}$\\
+   $M_1/M_2$ in-pair\\
+   $M_{1A}/M_{2A}$ N-casc\\$\;\;\leftarrow V_{BIAS2}$\\
+   $M_{3A}/M_{4A}$ P-casc\\$\;\;\leftarrow V_{BIAS1}$\\
+   $M_{11}/M_{12}$ N-bot\\$\;\;\leftarrow V_{BIAS3}$\\
+   $M_3$ diode @ $f_L$\\
+   $M_4\!\to V_{OUTP}$};
+
+\end{circuitikz}
+\end{document}

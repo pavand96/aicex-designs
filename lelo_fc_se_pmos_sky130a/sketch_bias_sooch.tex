@@ -1,0 +1,248 @@
+% Sooch wide-swing cascode bias - sky130A LVT, VDD = 0.9 V.
+% Matched-Vds (real Sooch) topology.
+%
+% Architecture: 4 gate-voltage generators + 1 cascoded NMOS matched replica.
+%
+%   Col 1  IBIAS pin -> PMOS diode                              -> VBP
+%   Col 2  PMOS mirror (g=VBP) + 1/4-asp NMOS diode (L=2)       -> VBIAS2 = V_T+2V_ov
+%   Col 3  PMOS mirror (g=VBP) + W/L NMOS diode                 -> VBIAS3 = V_T+V_ov
+%   Col 4  1/4-asp PMOS diode (L=4) + NMOS sink (g=VBIAS3)      -> VBIAS1 = VDD-|V_T|-2|V_ov|
+%   Col 5  PMOS mirror + NMOS cascode (g=VBIAS2) + NMOS mirror (g=VBIAS3)
+%          ** structurally identical to signal-path NMOS sink stack (M11+M1A)
+%          and current density matched per unit cell -> Vds(R11) = Vds(M11) **
+%
+% Linear dependency chain VBP -> VBIAS2 -> VBIAS3 -> VBIAS1; no circular references.
+% The matched replica column (Col 5) carries 20 uA = one signal-half sink current
+% so the per-unit current density across R11 (m=2) and R1A (m=1) matches the
+% signal's M11 (m=4 @ 40uA = 10uA/unit) and M1A (m=1 @ 20uA), giving identical
+% V_ov per unit -> Vds(R11) pinned at Vds(M11) by cascode action. Measured:
+% delta(nREPm, nbL) <= 9 mV across all 5 PVT corners (0.1 mV at SS).
+\documentclass[border=10pt]{standalone}
+\usepackage[siunitx,europeanresistors]{circuitikz}
+\usetikzlibrary{positioning,calc}
+
+\ctikzset{
+  tripoles/mos style=arrows,
+  transistors/arrow pos=end,
+  nodes width=0.06,
+  font=\small,
+}
+
+\begin{document}
+\begin{circuitikz}[line width=0.7pt,
+                   every node/.style={font=\small}]
+
+% ===== column / row coordinates =====
+\def\xA{2}      % col 1  VBP master
+\def\xB{6}      % col 2  VBIAS2 gen
+\def\xC{10}     % col 3  VBIAS3 gen
+\def\xD{14}     % col 4  VBIAS1 gen
+\def\xE{18.5}   % col 5  matched NMOS cascoded replica (3-device stack)
+
+\def\yVDD{13}
+\def\yPT{11}            % PMOS row (cols 1..4 and replica PMOS top)
+\def\yVBPbus{9.2}       % VBP bus track
+\def\yVBTwobus{7.6}     % VBIAS2 bus track (driven by col 2, drives col-5 cascode gate)
+\def\yNcasc{6.0}        % NMOS cascode row (col 5 only)
+\def\yVBThreebus{4.6}   % VBIAS3 bus track (driven by col 3, drives col-4 sink + col-5 R11)
+\def\yN{3.2}            % NMOS bottom row (cols 2,3,4 NMOS + col 5 R11)
+\def\yVSS{1.8}
+
+% ===== supply rails =====
+\draw (\xA-2,\yVDD) node[left]{\textbf{VDD = 0.9\,V}} -- (\xE+2,\yVDD);
+\draw (\xA-2,\yVSS) node[left]{\textbf{VSS}}          -- (\xE+2,\yVSS);
+
+% =============================================================
+%  Devices  -- PMOS top row, NMOS bottom row, +cascode row at col 5
+% =============================================================
+\node[pmos] (M1) at (\xA,\yPT) {};   % master diode
+\node[pmos] (M2) at (\xB,\yPT) {};   % VBP mirror, col 2
+\node[pmos] (M3) at (\xC,\yPT) {};   % VBP mirror, col 3
+\node[pmos] (M4) at (\xD,\yPT) {};   % 1/4-asp PMOS diode, col 4
+\node[pmos] (MR) at (\xE,\yPT) {};   % replica PMOS mirror, col 5
+
+\node[nmos] (N2) at (\xB,\yN) {};    % 1/4-asp NMOS diode, col 2
+\node[nmos] (N3) at (\xC,\yN) {};    % W/L NMOS diode, col 3
+\node[nmos] (N4) at (\xD,\yN) {};    % NMOS sink (g=VBIAS3), col 4
+\node[nmos] (R1A) at (\xE,\yNcasc) {};   % cascode (g=VBIAS2)
+\node[nmos] (R11) at (\xE,\yN) {};       % mirror (g=VBIAS3)
+
+% =============================================================
+%  PMOS sources -> VDD
+% =============================================================
+\foreach \m in {M1,M2,M3,M4,MR} { \draw (\m.S) -- (\m.S|-0,\yVDD) node[circ]{}; }
+
+% =============================================================
+%  NMOS sources -> VSS  (R1A.S -> R11.D handled separately)
+% =============================================================
+\foreach \m in {N2,N3,N4,R11} { \draw (\m.S) -- (\m.S|-0,\yVSS) node[circ]{}; }
+
+% =============================================================
+%  COL 1: M1 master PMOS diode -> IBIAS pin
+% =============================================================
+\draw (M1.G) -- ++(-0.6,0) coordinate (g1L) -- (g1L|-M1.D) -- (M1.D) node[circ]{};
+\draw (M1.D) -- (\xA,\yVBPbus) node[circ]{};
+\draw (\xA,\yVBPbus) -- (\xA,\yVSS+0.5) coordinate (ibias) node[ocirc]{};
+\node[anchor=west,font=\footnotesize,align=left] at ($(ibias)+(0.15,0)$)
+      {IBIAS pin\\(sinks 10\,\textmu A to VDD)};
+
+% =============================================================
+%  COL 2: M2 PMOS mirror -> N2 1/4-asp NMOS diode -> VBIAS2
+% =============================================================
+\draw (M2.D) -- (N2.D) node[circ]{} coordinate (vb2node);
+\draw (N2.G) |- ($(N2.G)+(0,0.6)$) -| (N2.D);
+
+% =============================================================
+%  COL 3: M3 PMOS mirror -> N3 W/L NMOS diode -> VBIAS3
+% =============================================================
+\draw (M3.D) -- (N3.D) node[circ]{} coordinate (vb3node);
+\draw (N3.G) |- ($(N3.G)+(0,0.6)$) -| (N3.D);
+
+% =============================================================
+%  COL 4: M4 1/4-asp PMOS diode -> N4 NMOS sink (g=VBIAS3) -> VBIAS1
+% =============================================================
+\draw (M4.G) -- ++(0.6,0) coordinate (g4R) -- (g4R|-M4.D) -- (M4.D) node[circ]{} coordinate (vb1node);
+\draw (M4.D) -- (N4.D);
+
+% =============================================================
+%  COL 5: REPLICA  (PMOS mirror -> R1A cascode -> R11 mirror)
+% =============================================================
+\draw (MR.D) -- (R1A.D) node[circ]{} coordinate (nrepi);
+\draw (R1A.S) -- (R11.D) node[circ]{} coordinate (nrepm);
+% subscript labels on internal nodes
+\node[anchor=west,font=\scriptsize] at ($(nrepi)+(0.15,0)$) {$n_{\!REPi}$};
+\node[anchor=west,font=\scriptsize] at ($(nrepm)+(0.15,0)$) {$n_{\!REPm}\!\approx\! V_{ov}$};
+
+% =============================================================
+%  VBP BUS  -- y = yVBPbus  (M1.D -> M2.G, M3.G, MR.G)
+%  Crossings: col 4 vertical wire (M4.D -> N4.D) passes through y=yVBPbus
+%  Col 4 is a diode-tied PMOS at top so its drain wire passes through; the
+%  BUS does not connect to col 4.  Add a jumper hop.
+% =============================================================
+\coordinate (vbpA) at (\xA,\yVBPbus);
+\draw (M2.G) -- ++(-0.6,0) -- ++(0,\yVBPbus-\yPT) coordinate (vbpB) node[circ]{};
+\draw (M3.G) -- ++(-0.6,0) -- ++(0,\yVBPbus-\yPT) coordinate (vbpC) node[circ]{};
+\draw (MR.G) -- ++(-0.6,0) -- ++(0,\yVBPbus-\yPT) coordinate (vbpE) node[circ]{};
+% bus from vbpA to vbpE, hop over col-4 vertical (xD)
+\draw (vbpA) -- (\xD-0.18,\yVBPbus) arc (180:0:0.18) -- (vbpE);
+\node[anchor=south,font=\small\bfseries] at ($(vbpA)!0.5!(vbpB)+(0,0.08)$) {VBP};
+
+% =============================================================
+%  VBIAS2 BUS  -- y = yVBTwobus  (vb2node -> R1A.G)
+%  Crossings: col 3 (xC) vertical wire and col 4 (xD) vertical wire.
+%  Both no-connect.  Two hops.
+% =============================================================
+\draw (vb2node) -- (\xB,\yVBTwobus) coordinate (vb2A) node[circ]{};
+\draw (R1A.G) -- ++(-0.6,0) coordinate (r1aGL) -- (r1aGL|-0,\yVBTwobus) coordinate (vb2E) node[circ]{};
+% bus with two semicircular hops (over xC and xD)
+\draw (vb2A) -- (\xC-0.18,\yVBTwobus) arc (180:0:0.18)
+             -- (\xD-0.18,\yVBTwobus) arc (180:0:0.18)
+             -- (vb2E);
+\node[anchor=south,font=\small\bfseries] at ($(vb2A)!0.5!(vb2E)+(0,0.08)$) {VBIAS2};
+
+% =============================================================
+%  VBIAS3 BUS  -- y = yVBThreebus  (vb3node -> N4.G and R11.G)
+%  Crossings: col 4 vertical wire (M4.D->N4.D) at xD goes through this y
+%  ON THE WAY TO N4.G connection... actually N4.G is on the LEFT of N4,
+%  and the bus connects to N4.G with a stub.  Need hop for col 5 R1A->R11
+%  vertical wire if it crosses?  R1A.S -> R11.D wire is at x=xE and
+%  spans yNcasc-down-to-yN, well below VBIAS3 bus y=4.6.  R11.G is on
+%  the left side of R11 at y=\yN.  Bus from col 3 goes through col 4
+%  and continues to col 5 R11.G.  Crossings: col 4 (xD) vertical and
+%  col 5 (xE) vertical (R1A->R11 wire is at y=[yN,yNcasc], not at y=4.6
+%  so no crossing there); col 4 vertical (M4-N4) passes through y=4.6.
+% =============================================================
+\draw (vb3node) -- (\xC,\yVBThreebus) coordinate (vb3A) node[circ]{};
+\draw (N4.G) -- ++(0.6,0) coordinate (n4GR) -- (n4GR|-0,\yVBThreebus) coordinate (vb3B) node[circ]{};
+\draw (R11.G) -- ++(-0.6,0) coordinate (r11GL) -- (r11GL|-0,\yVBThreebus) coordinate (vb3E) node[circ]{};
+% Bus: col 3 -> (jumps over col-4 vertical wire only between vb3A and vb3B is on
+%   the LEFT of N4, so no crossing required there since N4 is at xD and the
+%   tap goes to right of N4 -> bus on right of xD).  But col 4 (M4.D->N4.D)
+%   wire at x=xD crosses y=yVBThreebus between vb3A and vb3B: no-connect, hop.
+%   Then between vb3B and vb3E (right side of col 4), no more crossings.
+\draw (vb3A) -- (\xD-0.18,\yVBThreebus) arc (180:0:0.18) -- (vb3B);
+\draw (vb3B) -- (vb3E);
+\node[anchor=south,font=\small\bfseries] at ($(vb3A)!0.5!(vb3B)+(0,0.08)$) {VBIAS3};
+
+% =============================================================
+%  Cascode-gate / mirror-gate output ports (to signal path)
+% =============================================================
+\draw (vb2node) ++(0,0) -- ($(vb2node)+(0,-0.0)$); % placeholder
+% draw small output stubs labeled with target bias rails near columns
+\node[anchor=west,font=\small] at ($(vb2node)+(0.25,0.25)$) {\textbf{VBIAS2}};
+\node[anchor=west,font=\small] at ($(vb3node)+(0.25,0.25)$) {\textbf{VBIAS3}};
+\node[anchor=east,font=\small] at ($(vb1node)+(-0.25,0.25)$) {\textbf{VBIAS1}};
+% VBIAS1 port out (goes to signal-path PMOS cascodes)
+\draw (vb1node) -- ($(vb1node)+(1.5,0)$) node[ocirc]{};
+\node[anchor=west,font=\scriptsize,align=left] at ($(vb1node)+(1.65,0)$) {to PMOS\\cascodes};
+
+% =============================================================
+%  Device labels
+% =============================================================
+\node[anchor=west,font=\footnotesize] at ($(M1)+(0.55,0)$) {M1};
+\node[anchor=west,font=\footnotesize] at ($(M2)+(0.55,0)$) {M2};
+\node[anchor=west,font=\footnotesize] at ($(M3)+(0.55,0)$) {M3};
+\node[anchor=east,font=\footnotesize] at ($(M4)+(-1.0,0)$) {M4};
+\node[anchor=west,font=\footnotesize] at ($(MR)+(0.55,0)$) {M$_{P}$};
+\node[anchor=west,font=\footnotesize] at ($(N2)+(0.55,0)$) {N2};
+\node[anchor=west,font=\footnotesize] at ($(N3)+(0.55,0)$) {N3};
+\node[anchor=west,font=\footnotesize] at ($(N4)+(0.55,0)$) {N4};
+\node[anchor=east,font=\footnotesize] at ($(R1A)+(-1.0,0)$) {R$_{1A}$};
+\node[anchor=west,font=\footnotesize] at ($(R11)+(0.55,0)$) {R$_{11}$};
+
+% column captions
+\node[anchor=north,font=\footnotesize,align=center] at (\xA,\yVSS-0.4) {Col 1\\VBP\\master};
+\node[anchor=north,font=\footnotesize,align=center] at (\xB,\yVSS-0.4) {Col 2\\VBIAS2 gen\\(1/4-asp N)};
+\node[anchor=north,font=\footnotesize,align=center] at (\xC,\yVSS-0.4) {Col 3\\VBIAS3 gen\\(W/L diode)};
+\node[anchor=north,font=\footnotesize,align=center] at (\xD,\yVSS-0.4) {Col 4\\VBIAS1 gen\\(1/4-asp P)};
+\node[anchor=north,font=\footnotesize,align=center] at (\xE,\yVSS-0.4) {Col 5\\\textbf{MATCHED REPLICA}\\(= signal M11+M1A)};
+
+% =============================================================
+%  Title + sizing table + caption
+% =============================================================
+\node[anchor=south,font=\large\bfseries] at (\xC,\yVDD+0.4)
+     {Sooch wide-swing cascode bias  ---  VDD = 0.9\,V (matched-V\textsubscript{ds})};
+
+\node[anchor=north west,font=\footnotesize] at (\xA-2.2,\yVSS-2.0) {%
+\begin{tabular}{@{}lllcc@{}}
+\textbf{Device} & \textbf{Sizing (sky130\_fd\_pr LVT)} & \textbf{Role} & \textbf{m} & \textbf{I [\textmu A]}\\
+M1  = XMP\_REF & L=1,\ W=16,\ nf=4 & master PMOS diode (sets VBP)           & 4 & 10 \\
+M2  = XMP\_B2  & L=1,\ W=16,\ nf=4 & PMOS mirror (g=VBP), col 2             & 4 & 10 \\
+M3  = XMP\_VB3 & L=1,\ W=16,\ nf=4 & PMOS mirror (g=VBP), col 3             & 4 & 10 \\
+M4  = XMP\_B1  & L=4,\ W=16,\ nf=4 & 1/4-asp PMOS diode (sets VBIAS1)       & 4 & 10 \\
+$M_P$ = XMP\_REP & L=1,\ W=16,\ nf=4 & PMOS mirror for matched replica (g=VBP, 2$\times$) & 8 & 20 \\
+N2  = XMN\_B2  & L=2,\ W=4,\ nf=2  & 1/4-asp NMOS diode (VBIAS2 = $V_T+2V_{ov}$) & 4 & 10 \\
+N3  = XMN\_REF & L=0.5,\ W=4,\ nf=2 & NMOS diode (VBIAS3 = $V_T+V_{ov}$)     & 4 & 10 \\
+N4  = XMN\_B1  & L=0.5,\ W=4,\ nf=2 & NMOS sink (g=VBIAS3) for col 4         & 4 & 10 \\
+$R_{1A}$ = XMN\_R1A & L=4,\ W=32,\ nf=4 & replica cascode (g=VBIAS2) -- unit cell of signal M1A & 1 & 20 \\
+$R_{11}$ = XMN\_R11 & L=0.5,\ W=4,\ nf=2 & replica mirror (g=VBIAS3) -- unit cell of signal M11 & 2 & 20 \\
+\end{tabular}};
+
+\node[anchor=north west,font=\footnotesize,align=left,text width=18cm]
+     at (\xA-2.2,\yVSS-6.5) {%
+\textbf{Matched-V\textsubscript{ds} verification (5/5 PVT corners, measured 2026-06-02)}:
+\begin{tabular}{@{}lllll@{}}
+corner & TT & FF & SS & FS / SF \\
+$V_{ds}(M_{11})$ signal $=$ nbL    & 73 & 72 & 71 & 81 / 61 mV \\
+$V_{ds}(R_{11})$ replica $=$ nREPm & 68 & 65 & 71 & 72 / 64 mV \\
+$\Delta$                            & 5  & 7  & 0.1 & 9 / 3 mV \\
+\end{tabular}\\[4pt]
+\textbf{Why this is the right Sooch topology at 0.9\,V}:
+(1)~At sub-1\,V, stacking a third diode-tied device in a bias column creates a
+high-impedance floating source node that picks the wrong DC basin in TT/FF/FS.
+We avoid this by keeping every \emph{gate-voltage generator} (cols 1--4) two
+devices tall.
+(2)~The wide-swing matching is recovered by a separate \emph{cascoded NMOS
+replica} (col 5) whose gates are externally driven by the already-stable
+VBIAS2 / VBIAS3 rails -- no diode-tie loops, single stable DC basin.
+(3)~The replica current is scaled (20\,\textmu A = one signal-half sink) so the
+per-unit current density matches the signal: $R_{11}$ (m=2 @ 20\,\textmu A) and
+$M_{11}$ (m=4 @ 40\,\textmu A) both run at 10\,\textmu A/unit, identical
+$V_{ov}$ per unit -> cascode action pins $V_{ds}(R_{11}) = V_{ds}(M_{11})$,
+cancelling $\lambda$-mismatch in the VBIAS3 voltage mirror.
+Verified: VOUTP locked to V\textsubscript{CM}=0.3\,V, A\textsubscript{0} =
+43--50\,dB, GBW = 1.25--1.86\,MHz, PM = 80--83$^\circ$, IDD = 45--50\,\textmu A
+across all 5 PVT corners.};
+
+\end{circuitikz}
+\end{document}

@@ -1,0 +1,218 @@
+\documentclass[border=20pt]{standalone}
+\usepackage[siunitx, RPvoltages]{circuitikz}
+\usetikzlibrary{positioning,calc}
+\ctikzset{transistors/arrow pos=end}
+\ctikzset{bipoles/length=1.05cm}
+\ctikzset{tripoles/mos style/arrows}
+
+% ===== column x positions =====
+\def\cA{1.8}    % PMOS bias gen
+\def\cB{6.0}    % NMOS bias gen
+\def\cC{10.5}   % tail + input pair (centre)
+\def\cD{15.5}   % output cascode (SE, single leg)
+
+\def\yTop{12.0}
+\def\yBot{0}
+
+\begin{document}
+\begin{circuitikz}[american, font=\small,
+  bus/.style={blue!55!black, dashed, thick},
+  every node/.style={inner sep=1pt}]
+
+% ============================================================
+%  TITLE
+% ============================================================
+\node[font=\large\bfseries] at (\cC, 13.3) {Folded-cascode SE OTA --- wide-swing R-offset bias};
+\node[font=\small]          at (\cC, 12.8) {sky130A LVT \quad $V_{DD}=0.9\,$V \quad $I_{REF}=10\,\mu$A};
+
+% ============================================================
+%  COL A : PMOS bias gen
+%   VDD - MP1(diode, g=VP1) - MP2(diode, g=VP2) - Rp - 10uA - GND
+% ============================================================
+% VDD stub
+\draw (\cA,12.0) -- (\cA,11.4); \node[above] at (\cA,12.0) {$V_{DD}$};
+
+% MP1 (top, diode)
+\node[pmos, anchor=source, xscale=-1] (MP1) at (\cA,11.4) {};
+\draw (MP1.gate) -- ++(-0.55,0) coordinate (gP1);
+\node[circle,fill,inner sep=1pt] at (gP1) {};
+\node[left] at (gP1) {$V_{P1}$};
+% diode tie gate-to-drain (gate goes down-right and meets drain on the right side)
+\draw (gP1) -- ($(gP1)+(0,-0.7)$) -- ($(MP1.drain)+(-0.55,-0.7)$) -- ($(MP1.drain)+(-0.55,0)$) -- (MP1.drain);
+
+% MP2 (below MP1, diode)
+\node[pmos, anchor=source, xscale=-1] (MP2) at (\cA,9.8) {};
+\draw (MP1.drain) -- (MP2.source);
+\draw (MP2.gate) -- ++(-0.55,0) coordinate (gP2);
+\node[circle,fill,inner sep=1pt] at (gP2) {};
+\node[left] at (gP2) {$V_{P2}$};
+\draw (gP2) -- ($(gP2)+(0,-0.7)$) -- ($(MP2.drain)+(-0.55,-0.7)$) -- ($(MP2.drain)+(-0.55,0)$) -- (MP2.drain);
+
+% Rp
+\draw (MP2.drain) -- (\cA,7.8);
+\draw (\cA,7.8) to[R, l=$R_p$] (\cA,5.6);
+
+% 10 uA current sink to GND
+\draw (\cA,5.6) -- (\cA,4.8);
+\draw (\cA,4.8) to[I,invert] (\cA,2.6);
+\node[right,font=\scriptsize] at (\cA+0.25, 3.7) {$10\,\mu$A};
+\draw (\cA,2.6) -- (\cA,2.0) node[ground]{};
+
+\node[font=\bfseries] at (\cA,0.5) {PMOS bias gen};
+
+% ============================================================
+%  COL B : NMOS bias gen
+%   VDD - MPN(g=VP1) - Rn - MN2(diode, g=VN2) - MN1(diode, g=VN1) - GND
+% ============================================================
+\draw (\cB,12.0) -- (\cB,11.4); \node[above] at (\cB,12.0) {$V_{DD}$};
+
+% PMOS mirror (gate from VP1 bus)
+\node[pmos, anchor=source, xscale=-1] (MPN) at (\cB,11.4) {};
+\draw (MPN.gate) -- ++(-0.55,0) coordinate (gPN);
+\node[circle,fill,inner sep=1pt] at (gPN) {};
+
+% drain down to top of Rn
+\draw (MPN.drain) -- (\cB,9.8);
+\draw (\cB,9.8) to[R, l_=$R_n$] (\cB,7.6);
+
+% MN2 (cascode, diode)
+\node[nmos, anchor=drain] (MN2) at (\cB,7.6) {};
+\draw (MN2.gate) -- ++(0.55,0) coordinate (gN2);
+\node[circle,fill,inner sep=1pt] at (gN2) {};
+\node[right] at (gN2) {$V_{N2}$};
+\draw (gN2) -- ($(gN2)+(0,0.7)$) -- ($(MN2.drain)+(0.55,0.7)$) -- ($(MN2.drain)+(0.55,0)$) -- (MN2.drain);
+
+% MN1 below MN2 (diode)
+\node[nmos, anchor=drain] (MN1) at (\cB,6.0) {};
+\draw (MN2.source) -- (MN1.drain);
+\draw (MN1.gate) -- ++(0.55,0) coordinate (gN1);
+\node[circle,fill,inner sep=1pt] at (gN1) {};
+\node[right] at (gN1) {$V_{N1}$};
+\draw (gN1) -- ($(gN1)+(0,0.7)$) -- ($(MN1.drain)+(0.55,0.7)$) -- ($(MN1.drain)+(0.55,0)$) -- (MN1.drain);
+
+% GND
+\draw (MN1.source) -- (\cB,4.4) node[ground]{};
+
+\node[font=\bfseries] at (\cB,0.5) {NMOS bias gen};
+
+% ============================================================
+%  COL C : tail + PMOS input pair
+%   VDD - MTL(g=VP1) - Vtail - MInP/MInN (g=Vinp/Vinn) - Vmidn/Vmidp downwards
+% ============================================================
+\draw (\cC,12.0) -- (\cC,11.4); \node[above] at (\cC,12.0) {$V_{DD}$};
+
+% Tail
+\node[pmos, anchor=source, xscale=-1] (MTL) at (\cC,11.4) {};
+\draw (MTL.gate) -- ++(-0.55,0) coordinate (gTL);
+\node[circle,fill,inner sep=1pt] at (gTL) {};
+
+% Vtail node = drain of MTL
+\draw (MTL.drain) -- (\cC,9.6);
+\node[circle,fill,inner sep=1.2pt] at (\cC,9.6) {};
+\node[above right=-1pt and 2pt, font=\small] at (\cC,9.6) {$V_{tail}$};
+
+% horizontal sources rail for input pair
+\draw (\cC-1.5,9.6) -- (\cC+1.5,9.6);
+
+% Input pair PMOS  (sources up, drains down)
+\node[pmos, anchor=source, xscale=-1] (MIP) at (\cC-1.5,9.6) {};
+\node[pmos, anchor=source]            (MIN) at (\cC+1.5,9.6) {};
+\node[left]  at ($(MIP.gate)+(-0.1,0)$) {$V_{inp}$};
+\node[right] at ($(MIN.gate)+(0.1,0)$)  {$V_{inn}$};
+\node[font=\scriptsize] at (\cC-2.0,8.7) {$M_{INP}$};
+\node[font=\scriptsize] at (\cC+2.0,8.7) {$M_{INN}$};
+
+% Drains of input pair = Vmidn (left) and Vmidp (right), drop downward
+\draw (MIP.drain) -- (\cC-1.5,7.5);
+\node[circle,fill,inner sep=1.2pt] at (\cC-1.5,7.5) {};
+\node[below, font=\small] at (\cC-1.5,7.4) {$V_{midn}$};
+
+\draw (MIN.drain) -- (\cC+1.5,7.5);
+\node[circle,fill,inner sep=1.2pt] at (\cC+1.5,7.5) {};
+\node[below, font=\small] at (\cC+1.5,7.4) {$V_{midp}$};
+
+\node[font=\bfseries] at (\cC,0.5) {Tail + input pair};
+
+% ============================================================
+%  COL D : OUTPUT cascode (single-ended, single leg)
+%   VDD - MP0(g=VP0) - MP2o(g=VP2) - Voutp - MN2o(g=VN2) - MN1o(g=Vmid?) - GND
+%   In standard SE folded cascode the bottom NMOS gate is driven by Vmidn (signal),
+%   matched by a mirror leg whose gate is at Vmidp. For clarity we show one leg.
+% ============================================================
+\draw (\cD,12.0) -- (\cD,11.4); \node[above] at (\cD,12.0) {$V_{DD}$};
+
+% MP0 top
+\node[pmos, anchor=source, xscale=-1] (MP0) at (\cD,11.4) {};
+\draw (MP0.gate) -- ++(-0.55,0) coordinate (gP0);
+\node[circle,fill,inner sep=1pt] at (gP0) {};
+\node[left] at (gP0) {$V_{P1}$};   %% gate is V_P1 (top current source mirror)
+
+% MP2o cascode
+\node[pmos, anchor=source, xscale=-1] (MP2o) at (\cD,9.8) {};
+\draw (MP0.drain) -- (MP2o.source);
+\draw (MP2o.gate) -- ++(-0.55,0) coordinate (gP2o);
+\node[circle,fill,inner sep=1pt] at (gP2o) {};
+\node[left] at (gP2o) {$V_{P2}$};
+
+% Voutp node
+\draw (MP2o.drain) -- (\cD,8.2);
+\node[circle,fill,inner sep=1.4pt] at (\cD,8.2) {};
+\node[right=4pt, font=\small\bfseries] at (\cD,8.2) {$V_{OUTP}$};
+
+% MN2o cascode NMOS (drain up at Voutp)
+\node[nmos, anchor=drain] (MN2o) at (\cD,8.2) {};
+\draw (MN2o.gate) -- ++(0.55,0) coordinate (gN2o);
+\node[circle,fill,inner sep=1pt] at (gN2o) {};
+\node[right] at (gN2o) {$V_{N2}$};
+
+% MN1o bottom NMOS  (gate driven by V_midn  -- signal)
+\node[nmos, anchor=drain] (MN1o) at (\cD,6.6) {};
+\draw (MN2o.source) -- (MN1o.drain);
+\draw (MN1o.gate) -- ++(0.55,0) coordinate (gN1o);
+\node[circle,fill,inner sep=1pt] at (gN1o) {};
+\node[right] at (gN1o) {$V_{midn}$};   %% signal input from input pair drain
+
+% Source to GND
+\draw (MN1o.source) -- (\cD,4.4) node[ground]{};
+
+\node[font=\bfseries] at (\cD,0.5) {SE output cascode};
+
+% ============================================================
+%  BIAS BUSES (dashed)
+%   - VP1: col A gate -> col B PMOS mirror gate -> col C tail gate -> col D top gate
+%   - VP2: col A bottom diode -> col D cascode gate
+%   - VN2: col B top diode -> col D NMOS cascode gate
+%   - Vmidn: col C left drain -> col D bottom NMOS gate
+% ============================================================
+% VP1 bus runs across the top at y=10.6
+\draw[bus] (gP1) -| (\cA-0.9,10.6) -- (\cD-0.9,10.6) |- (gP0);
+% taps to col B and col C tail gates
+\draw[bus] (\cB-0.9,10.6) |- (gPN);
+\draw[bus] (\cC-0.9,10.6) |- (gTL);
+\node[bus, font=\scriptsize, above] at (\cB+1.5,10.65) {$V_{P1}$ bus};
+
+% VP2 bus from col A (gP2) along y=4.4 across to col D
+\draw[bus] (gP2) -| (\cA-1.6,8.9) -- (\cD-1.6,8.9) |- (gP2o);
+\node[bus, font=\scriptsize, above] at (\cC,8.95) {$V_{P2}$ bus};
+
+% VN2 bus from col B (gN2) to col D (gN2o)
+\draw[bus] (gN2) -| (\cB+1.6,7.2) -- (\cD+1.6,7.2) |- (gN2o);
+\node[bus, font=\scriptsize, above] at (\cC,7.25) {$V_{N2}$ bus};
+
+% V_midn signal route: col C drain (\cC-1.5,7.5) -> col D MN1o gate
+\draw[bus, red!70!black] (\cC-1.5,7.5) -- (\cC-1.5,5.8) -- (\cD+1.6,5.8) |- (gN1o);
+\node[bus, font=\scriptsize, above, red!70!black] at (\cC+2,5.85) {$V_{midn}$ \;signal};
+
+% Note about mirror leg
+\node[draw, fill=yellow!12, rounded corners, align=left, font=\scriptsize]
+   at (\cD-0.5,3.0)
+   {{\bfseries SE conversion note:}\\
+    Drawn here is the {\bfseries output leg only}.\\
+    A {\bfseries mirror leg} (not shown) has identical\\
+    PMOS top/cascode, but its NMOS-bot gate is\\
+    driven by $V_{midp}$ AND that leg's top PMOS is\\
+    diode-tied to set $V_{P1}$ for both legs\\
+    (i.e.\ $V_{P1}$ on $M_{P0}$ here = mirror diode).};
+
+\end{circuitikz}
+\end{document}

@@ -1,0 +1,185 @@
+% Sooch low-voltage cascode bias - sky130A LVT, VDD = 0.9 V.
+%
+% Topology (proven across TT/FF/SS/FS/SF):
+%   Col 1: master PMOS diode at IBIAS pin                        -> VBP
+%   Col 2: PMOS mirror (gate=VBP) + NMOS diode (W/L)             -> VBIAS3
+%   Col 3: PMOS mirror (gate=VBP) + NMOS diode (1/4 aspect, L=2) -> VBIAS2  (Vt + 2 Vov)
+%   Col 4: PMOS diode (1/4 aspect, L=4) + NMOS sink (gate=VBIAS3)-> VBIAS1  (VDD - |Vt|-2|Vov|)
+%
+% Sooch trick: the 1/4-aspect-ratio diode (cols 3 & 4) develops VGS = Vt + 2*Vov
+% at the same Iref, producing the cascode bias one Vov above standard mirror Vgs.
+% This is what enables a wide-swing cascode to keep the bottom transistor at
+% Vds = Vov instead of Vds = Vt+Vov, saving one Vt of output headroom.
+%
+% Why NO cascoded bias columns at 0.9 V: a third stacked device creates a
+% floating-source high-impedance node that picks the wrong DC basin in
+% TT/FF/FS.  Two-device stacks always converge.  Matching is recovered via
+% Pelgrom m = 4 (every unit cell has the same W,L as the signal-path
+% mirror unit; only the parallel count differs).
+\documentclass[border=10pt]{standalone}
+\usepackage[siunitx,europeanresistors]{circuitikz}
+\usetikzlibrary{positioning,calc}
+
+\ctikzset{
+  tripoles/mos style=arrows,
+  transistors/arrow pos=end,
+  nodes width=0.06,
+  font=\small,
+}
+
+\begin{document}
+\begin{circuitikz}[line width=0.7pt,
+                   every node/.style={font=\small}]
+
+% ===== column / row coordinates =====
+\def\xA{2}      % col 1 - VBP master
+\def\xB{6}      % col 2 - VBIAS3 generator
+\def\xC{10}     % col 3 - VBIAS2 generator (1/4-aspect NMOS diode)
+\def\xD{14}     % col 4 - VBIAS1 generator (1/4-aspect PMOS diode)
+
+\def\yVDD{12}
+\def\yPT{10}            % PMOS row
+\def\yVBPbus{8}         % VBP bus track (between PMOS and NMOS rows)
+\def\yVBThreebus{6.4}   % VBIAS3 bus track
+\def\yN{4.5}            % NMOS row
+\def\yVSS{2.5}
+
+% ===== supply rails =====
+\draw (\xA-2,\yVDD) node[left]{\textbf{VDD = 0.9\,V}} -- (\xD+2.5,\yVDD);
+\draw (\xA-2,\yVSS) node[left]{\textbf{VSS}}          -- (\xD+2.5,\yVSS);
+
+% =============================================================
+%  Devices  (PMOS on top row, NMOS on bottom row)
+% =============================================================
+\node[pmos] (M1) at (\xA,\yPT) {};   % master
+\node[pmos] (M2) at (\xB,\yPT) {};   % mirror -> VBIAS3 col
+\node[pmos] (M3) at (\xC,\yPT) {};   % mirror -> VBIAS2 col
+\node[pmos] (M4) at (\xD,\yPT) {};   % 1/4-aspect diode -> VBIAS1
+
+\node[nmos] (N2) at (\xB,\yN) {};    % NMOS diode -> VBIAS3
+\node[nmos] (N3) at (\xC,\yN) {};    % NMOS diode (1/4 aspect) -> VBIAS2
+\node[nmos] (N4) at (\xD,\yN) {};    % NMOS sink (gate=VBIAS3)
+
+% =============================================================
+%  PMOS sources -> VDD (with dots)
+% =============================================================
+\foreach \m in {M1,M2,M3,M4} { \draw (\m.S) -- (\m.S|-0,\yVDD) node[circ]{}; }
+
+% =============================================================
+%  NMOS sources -> VSS (with dots)
+% =============================================================
+\foreach \m in {N2,N3,N4} { \draw (\m.S) -- (\m.S|-0,\yVSS) node[circ]{}; }
+
+% =============================================================
+%  COL 1: M1 master PMOS diode -> IBIAS pin
+% =============================================================
+\draw (M1.G) -- ++(-0.6,0) coordinate (g1L) -- (g1L|-M1.D) -- (M1.D) node[circ]{};
+% IBIAS pin: M1.D straight down, joins VBP bus, then continues down to pin
+\draw (M1.D) -- (\xA,\yVBPbus) node[circ]{};
+\draw (\xA,\yVBPbus) -- (\xA,\yVSS+0.6) coordinate (ibias) node[ocirc]{};
+\node[anchor=west,font=\footnotesize,align=left] at ($(ibias)+(0.15,0)$)
+      {IBIAS pin\\(sinks 10\,\textmu A to VDD)};
+
+% =============================================================
+%  COL 2: M2 PMOS mirror -> NMOS diode N2 -> sets VBIAS3
+% =============================================================
+\draw (M2.D) -- (N2.D) node[circ]{} coordinate (vb3node);
+\draw (N2.G) |- ($(N2.G)+(0,0.6)$) -| (N2.D);
+% (VBIAS3 is labelled on its bus; no second label here)
+
+% =============================================================
+%  COL 3: M3 PMOS mirror -> NMOS diode N3 (L=2, 1/4 aspect) -> sets VBIAS2
+% =============================================================
+\draw (M3.D) -- (N3.D) node[circ]{} coordinate (vb2node);
+\draw (N3.G) |- ($(N3.G)+(0,0.6)$) -| (N3.D);
+\node[anchor=west,font=\small] at ($(vb2node)+(0.25,0.25)$) {\textbf{VBIAS2}};
+% VBIAS2 port out (to signal-path NMOS cascodes)
+\draw (vb2node) -- ($(vb2node)+(1.6,0)$) node[ocirc]{};
+\node[anchor=west,font=\scriptsize,align=left] at ($(vb2node)+(1.75,0)$) {to signal\\path};
+
+% =============================================================
+%  COL 4: M4 1/4-aspect PMOS diode -> NMOS sink N4 (gate=VBIAS3) -> VBIAS1
+% =============================================================
+% Diode tie on RIGHT side (so left side stays clean for VBIAS3 bus tap)
+\draw (M4.G) -- ++(0.6,0) coordinate (g4R) -- (g4R|-M4.D) -- (M4.D) node[circ]{} coordinate (vb1node);
+\draw (M4.D) -- (N4.D);
+\node[anchor=east,font=\small] at ($(vb1node)+(-0.25,0.25)$) {\textbf{VBIAS1}};
+% VBIAS1 port out
+\draw (vb1node) -- ($(vb1node)+(2.0,0)$) -- ++(0,-0.5) node[ocirc]{};
+\node[anchor=west,font=\scriptsize,align=left] at ($(vb1node)+(2.15,-0.3)$) {to signal\\path};
+
+% =============================================================
+%  VBP BUS  -- y = yVBPbus
+%  Connects: M1.D / IBIAS drop (col 1), M2.G (col 2), M3.G (col 3).
+%  Col 4: M4 is diode-tied (G=D=VBIAS1), so VBP bus does NOT extend to col 4.
+%  No-connect crossings: NONE (bus ends at col 3).
+% =============================================================
+\coordinate (vbpA) at (\xA,\yVBPbus);
+\draw (M2.G) -- ++(-0.6,0) -- ++(0,\yVBPbus-\yPT) coordinate (vbpB) node[circ]{};
+\draw (M3.G) -- ++(-0.6,0) -- ++(0,\yVBPbus-\yPT) coordinate (vbpC) node[circ]{};
+\draw (vbpA) -- (vbpC);
+\node[anchor=south,font=\small\bfseries] at ($(vbpA)!0.5!(vbpB)+(0,0.08)$) {VBP};
+
+% =============================================================
+%  VBIAS3 BUS  -- y = yVBThreebus
+%  Connects: vb3node (col 2) over to N4.G (col 4).
+%  CROSSES col-3 vertical wire (M3.D->N3.D) at x = xC : NO-CONNECT -> jumper hop.
+% =============================================================
+\draw (vb3node) -- (\xB,\yVBThreebus) coordinate (vb3A) node[circ]{};
+\draw (N4.G) -- ++(-0.6,0) -- ++(0,\yVBThreebus-\yN) coordinate (vb3B) node[circ]{};
+\draw (vb3A) -- (\xC-0.18,\yVBThreebus) arc (180:0:0.18) -- (vb3B);
+\node[anchor=south,font=\small\bfseries] at ($(vb3A)!0.5!(vb3B)+(0,0.10)$) {VBIAS3};
+
+% =============================================================
+%  Device labels
+% =============================================================
+\node[anchor=west,font=\footnotesize] at ($(M1)+(0.55,0)$) {M1};
+\node[anchor=west,font=\footnotesize] at ($(M2)+(0.55,0)$) {M2};
+\node[anchor=west,font=\footnotesize] at ($(M3)+(0.55,0)$) {M3};
+\node[anchor=east,font=\footnotesize] at ($(M4)+(-1.0,0)$) {M4};
+\node[anchor=west,font=\footnotesize] at ($(N2)+(0.55,0)$) {N2};
+\node[anchor=west,font=\footnotesize] at ($(N3)+(0.55,0)$) {N3};
+\node[anchor=west,font=\footnotesize] at ($(N4)+(0.55,0)$) {N4};
+
+% column captions under VSS
+\node[anchor=north,font=\footnotesize,align=center] at (\xA,\yVSS-0.4) {Col 1\\VBP master};
+\node[anchor=north,font=\footnotesize,align=center] at (\xB,\yVSS-0.4) {Col 2\\VBIAS3 gen};
+\node[anchor=north,font=\footnotesize,align=center] at (\xC,\yVSS-0.4) {Col 3\\VBIAS2 gen\\(1/4-asp N)};
+\node[anchor=north,font=\footnotesize,align=center] at (\xD,\yVSS-0.4) {Col 4\\VBIAS1 gen\\(1/4-asp P)};
+
+% =============================================================
+%  Title + sizing table + caption
+% =============================================================
+\node[anchor=south,font=\large\bfseries] at (\xB+1.5,\yVDD+0.4)
+     {Sooch low-voltage cascode bias  ---  VDD = 0.9\,V};
+
+\node[anchor=north west,font=\footnotesize] at (\xA-2.2,\yVSS-1.8) {%
+\begin{tabular}{@{}lllc@{}}
+\textbf{Device} & \textbf{Sizing (sky130\_fd\_pr LVT)} & \textbf{Role} & \textbf{I [\textmu A]}\\
+M1 = XMP\_REF & L=1,\ W=16,\ nf=4,\ m=4 & master PMOS diode (sets VBP)         & 10 \\
+M2 = XMP\_VB3 & L=1,\ W=16,\ nf=4,\ m=4 & PMOS mirror (gate=VBP)               & 10 \\
+M3 = XMP\_B2  & L=1,\ W=16,\ nf=4,\ m=4 & PMOS mirror (gate=VBP)               & 10 \\
+M4 = XMP\_B1  & L=4,\ W=16,\ nf=4,\ m=4 & 1/4-aspect PMOS diode (sets VBIAS1)  & 10 \\
+N2 = XMN\_REF & L=0.5,\ W=4,\ nf=2,\ m=4 & NMOS diode (sets VBIAS3 = $V_T + V_{ov}$)   & 10 \\
+N3 = XMN\_B2  & L=2,\ W=4,\ nf=2,\ m=4   & 1/4-aspect NMOS diode (VBIAS2 = $V_T + 2V_{ov}$) & 10 \\
+N4 = XMN\_B1  & L=0.5,\ W=4,\ nf=2,\ m=4 & NMOS sink (gate=VBIAS3)              & 10 \\
+\end{tabular}};
+
+\node[anchor=north west,font=\footnotesize,align=left,text width=15cm]
+     at (\xA-2.2,\yVSS-4.6) {%
+\textbf{Why this is robust across all 5 corners}
+(verified TT/FF/SS/FS/SF, VOUTP locked to VCM = 0.3\,V, IDD = 41--46\,\textmu A,
+MC 250/250 pass):
+(1)~Every bias column is only two devices tall -- no high-impedance
+floating source node to fall into a wrong DC basin.
+(2)~Sooch 1/4-aspect-ratio diodes (M4, N3) develop $V_{GS} = V_T + 2V_{ov}$
+at $I_\text{ref}$, generating the cascode bias one $V_{ov}$ above the
+standard mirror $V_{GS}$.  Signal-path cascodes therefore pin the bottom
+transistor at $V_{ds}=V_{ov}$ instead of $V_T+V_{ov}$, saving one $V_T$
+of output swing.
+(3)~Master and all replica PMOSes share identical $W, L$; only the
+parallel-multiplier $m$ ratios the current.  Pelgrom matching ($m=4$)
+halves $\sigma(\Delta V_T)$ vs single-unit cells.};
+
+\end{circuitikz}
+\end{document}

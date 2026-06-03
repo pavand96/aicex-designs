@@ -1,0 +1,11 @@
+# Simulator artefacts
+sim/run/
+
+# Editor / build backups
+*.bak
+*.bak2
+
+# LaTeX intermediates
+*.aux
+*.log
+!sim/**/*.log
